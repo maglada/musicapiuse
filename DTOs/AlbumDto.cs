@@ -1,11 +1,12 @@
-namespace DTOs.Album
+namespace DTOs
 {
     public class AlbumDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Title { get; set; }
-        public string Artist { get; set; }
-        public int Year { get; set; }
+        public string CoverUrl { get; set; }
+        public List<string> Artists { get; set; }
+        public string ReleaseDate { get; set; }
         public int Popularity { get; set; }
     }
 }

@@ -1,10 +1,11 @@
-namespace DTOs.Artist
+namespace DTOs
 {
     public class ArtistDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Name { get; set; }
-        public string Genre { get; set; }
+        public string CoverUrl { get; set; }
+        public List<string> Genre { get; set; }
         public int Popularity { get; set; }
     }
 }

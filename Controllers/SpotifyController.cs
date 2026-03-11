@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using SpotifyAPI.Web;
@@ -56,7 +57,16 @@ namespace SpotifyWebApp.Controllers
             try
             {
                 var album = await _spotifyService.GetAlbumAsync(id);
-                return Ok(album);
+                var album_dto = new AlbumDto
+                {
+                    Id = album.Id,
+                    Title = album.Name,
+                    CoverUrl = album.Images?.FirstOrDefault()?.Url,
+                    Artists = album.Artists?.Select(a => a.Name).ToList(),
+                    ReleaseDate = album.ReleaseDate,
+                    Popularity = album.Popularity,
+                };
+                return Ok(album_dto);
             }
             catch (Exception ex)
                 when (ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
@@ -95,7 +105,6 @@ namespace SpotifyWebApp.Controllers
             }
         }
 
-        //TODO: DTO for artist, album, track. ability to search and check in either way around.
         //TODO-MAYBE: add ablity to filter underground(lower from 50/100 pop) and pop, enhancing it via recs for user or overall if not login
 
         [HttpGet("login")]
@@ -132,7 +141,17 @@ namespace SpotifyWebApp.Controllers
             }
             if (current.Item is FullTrack track)
             {
-                return Ok(track);
+                track_dto = new TrackDto
+                {
+                    Id = track.Id,
+                    Title = track.Name,
+                    CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
+                    Artist = track.Artists?.Select(a => a.Name).ToList(),
+                    Album = track.Album?.Name,
+                    Duration = track.DurationMs / 1000,
+                    Popularity = track.Popularity,
+                };
+                return Ok(track_dto);
             }
             return Ok(current);
         }
