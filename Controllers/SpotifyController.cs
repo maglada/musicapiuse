@@ -141,7 +141,7 @@ namespace SpotifyWebApp.Controllers
             }
             if (current.Item is FullTrack track)
             {
-                track_dto = new TrackDto
+                var track_dto = new TrackDto
                 {
                     Id = track.Id,
                     Title = track.Name,
