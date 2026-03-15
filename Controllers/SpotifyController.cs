@@ -51,6 +51,33 @@ namespace SpotifyWebApp.Controllers
             }
         }
 
+        [HttpGet("artist/{id}")]
+        public async Task<IActionResult> GetArtist(string id)
+        {
+            try
+            {
+                var artist = await _spotifyService.GetArtistAsync(id);
+                var artist_dto = new ArtistDto
+                {
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    CoverUrl = artist.Images?.FirstOrDefault()?.Url,
+                    Genre = artist.Genres,
+                    Popularity = artist.Popularity,
+                };
+                return Ok(artist_dto);
+            }
+            catch (Exception ex)
+                when (ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
+            {
+                return NotFound($"artist '{id}' not found on Spotify.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Unexpected error: {ex.Message}");
+            }
+        }
+
         [HttpGet("album/{id}")]
         public async Task<IActionResult> GetAlbum(string id)
         {
@@ -82,20 +109,26 @@ namespace SpotifyWebApp.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> GetSearchResultAsync(
             [FromQuery] string query,
-            string type = "track"
+            [FromQuery] string type = "track"
         )
         {
-            var request = new SearchRequest(SearchRequest.Types.Track, query) { };
             if (string.IsNullOrWhiteSpace(query))
             {
                 return BadRequest($"Nothing to search for");
             }
             try
             {
-                var results = await _spotifyService.GetSearchResultsAsync(query);
-                if (results?.Tracks?.Items == null || results.Tracks.Items.Count == 0)
+                var results = await _spotifyService.GetSearchResultsAsync(query, type);
+                var isEmpty = type.ToLower() switch
                 {
-                    return NotFound($"No results found for '{query}'");
+                    "track" => results?.Tracks?.Items == null || results.Tracks.Items.Count == 0,
+                    "album" => results?.Albums?.Items == null || results.Albums.Items.Count == 0,
+                    "artist" => results?.Artists?.Items == null || results.Artists.Items.Count == 0,
+                    _ => true,
+                };
+                if (isEmpty)
+                {
+                    return NotFound($"No results found for '{query}' with '{type}'");
                 }
                 return Ok(results);
             }

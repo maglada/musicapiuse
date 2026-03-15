@@ -7,6 +7,7 @@ namespace SpotifyWebApp.Interfaces
     {
         Task<FullTrack> GetTrackAsync(string trackId);
         Task<FullAlbum> GetAlbumAsync(string albumId);
+        Task<FullArtist> GetArtistAsync(string artistId);
         Task<SearchResponse> GetSearchResultsAsync(string query, string type = "track");
     }
 }

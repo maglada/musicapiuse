@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BreakMusic")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7da76db644e419f866fce2d313b1785d29094746")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+62f1358e6ffd44ec4795d6c945ebdf2abb76993c")]
 [assembly: System.Reflection.AssemblyProductAttribute("BreakMusic")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BreakMusic")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

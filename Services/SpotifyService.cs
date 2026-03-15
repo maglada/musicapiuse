@@ -23,8 +23,22 @@ namespace SpotifyWebApp.Services
 
         public async Task<SearchResponse> GetSearchResultsAsync(string query, string type = "track")
         {
-            var searchRequest = new SearchRequest(SearchRequest.Types.Track, query);
-            return await _spotify.Search.Item(searchRequest);
+            switch (type.ToLower())
+            {
+                case "track":
+                    var trackSearchRequest = new SearchRequest(SearchRequest.Types.Track, query);
+                    return await _spotify.Search.Item(trackSearchRequest);
+                case "album":
+                    var albumSearchRequest = new SearchRequest(SearchRequest.Types.Album, query);
+                    return await _spotify.Search.Item(albumSearchRequest);
+                case "artist":
+                    var artistSearchRequest = new SearchRequest(SearchRequest.Types.Artist, query);
+                    return await _spotify.Search.Item(artistSearchRequest);
+                default:
+                    throw new ArgumentException(
+                        "Invalid search type. Must be 'track', 'album', or 'artist'."
+                    );
+            }
         }
 
         public async Task<FullTrack> GetTrackAsync(string trackId)
@@ -35,6 +49,11 @@ namespace SpotifyWebApp.Services
         public async Task<FullAlbum> GetAlbumAsync(string albumId)
         {
             return await _spotify.Albums.Get(albumId);
+        }
+
+        public async Task<FullArtist> GetArtistAsync(string artistId)
+        {
+            return await _spotify.Artists.Get(artistId);
         }
     }
 }
