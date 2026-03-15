@@ -8,6 +8,14 @@ namespace SpotifyWebApp.Services
     public class SpotifyService : ISpotifyService
     {
         private readonly SpotifyClient _spotify;
+        private readonly SpotifyTokenService _tokenService;
+
+        private SpotifyClient GetClient(string? userToken = null)
+        {
+            if (!string.IsNullOrEmpty(userToken))
+                return new SpotifyClient(userToken);
+            return _spotify;
+        }
 
         public SpotifyService(IConfiguration config)
         {
