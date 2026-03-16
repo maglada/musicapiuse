@@ -62,7 +62,7 @@ namespace SpotifyWebApp.Controllers
                     Id = artist.Id,
                     Name = artist.Name,
                     CoverUrl = artist.Images?.FirstOrDefault()?.Url,
-                    Genre = artist.Genres,
+                    Genres = artist.Genres,
                     Popularity = artist.Popularity,
                 };
                 return Ok(artist_dto);
@@ -84,12 +84,19 @@ namespace SpotifyWebApp.Controllers
             try
             {
                 var album = await _spotifyService.GetAlbumAsync(id);
+                var genres = new List<string>();
+                if (album.Artists?.Any() == true)
+                {
+                    var artist = await _spotifyService.GetArtistAsync(album.Artists.First().Id);
+                    genres = artist.Genres ?? new List<string>();
+                }
                 var album_dto = new AlbumDto
                 {
                     Id = album.Id,
                     Title = album.Name,
                     CoverUrl = album.Images?.FirstOrDefault()?.Url,
                     Artists = album.Artists?.Select(a => a.Name).ToList(),
+                    Genres = genres,
                     ReleaseDate = album.ReleaseDate,
                     Popularity = album.Popularity,
                 };
@@ -179,7 +186,7 @@ namespace SpotifyWebApp.Controllers
                     Id = track.Id,
                     Title = track.Name,
                     CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
-                    Artist = track.Artists?.Select(a => a.Name).ToList(),
+                    Artists = track.Artists?.Select(a => a.Name).ToList(),
                     Album = track.Album?.Name,
                     Duration = track.DurationMs / 1000,
                     Popularity = track.Popularity,
