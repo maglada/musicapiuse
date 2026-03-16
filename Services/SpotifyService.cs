@@ -52,7 +52,10 @@ namespace SpotifyWebApp.Services
 
         public async Task<FullTrack> GetTrackAsync(string trackId)
         {
-            return await GetClient(_tokenService.GetToken()).Tracks.Get(trackId);
+            var token = _tokenService.GetToken();
+            Console.WriteLine($"SERVICE tokenService hash: {_tokenService.GetHashCode()}");
+            Console.WriteLine($"TOKEN: {token?.Substring(0, 20) ?? "NULL"}");
+            return await GetClient(token).Tracks.Get(trackId);
         }
 
         public async Task<FullAlbum> GetAlbumAsync(string albumId)

@@ -16,16 +16,19 @@ namespace SpotifyWebApp.Controllers
         private readonly ISpotifyService _spotifyService;
         private readonly IConfiguration _config;
         private readonly SpotifyTokenService _tokenService;
+        private readonly IMusicBrainzService _musicBrainz;
 
         public SpotifyController(
             ISpotifyService spotifyService,
             IConfiguration config,
-            SpotifyTokenService tokenService
+            SpotifyTokenService tokenService,
+            IMusicBrainzService musicBrainz
         )
         {
             _spotifyService = spotifyService;
             _config = config;
             _tokenService = tokenService;
+            _musicBrainz = musicBrainz;
         }
 
         [HttpGet("track/{id}")]
@@ -38,7 +41,25 @@ namespace SpotifyWebApp.Controllers
             try
             {
                 var track = await _spotifyService.GetTrackAsync(id);
-                return Ok(track);
+                var isrc = track.ExternalIds?.GetValueOrDefault("isrc");
+                var mb =
+                    isrc != null
+                        ? await _musicBrainz.GetByIsrcAsync(isrc)
+                        : new MusicBrainzResult();
+                var track_dto = new TrackDto
+                {
+                    Id = track.Id,
+                    Title = track.Name,
+                    CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
+                    Artists = track.Artists?.Select(a => a.Name).ToList(),
+                    Album = track.Album?.Name,
+                    Duration = track.DurationMs / 1000,
+                    Popularity = track.Popularity,
+                    Explicit = track.Explicit,
+                    Genres = mb.Genres,
+                    ReleaseDate = mb.ReleaseDate,
+                };
+                return Ok(track_dto);
             }
             catch (Exception ex)
                 when (ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
@@ -189,7 +210,9 @@ namespace SpotifyWebApp.Controllers
                     Artists = track.Artists?.Select(a => a.Name).ToList(),
                     Album = track.Album?.Name,
                     Duration = track.DurationMs / 1000,
-                    Popularity = track.Popularity,
+                    IsPlaying = current.IsPlaying,
+                    ProgressMs = current.ProgressMs ?? 0,
+                    Explicit = track.Explicit,
                 };
                 return Ok(track_dto);
             }
@@ -207,7 +230,13 @@ namespace SpotifyWebApp.Controllers
                     new Uri(_config["Spotify:RedirectUri"])
                 )
             );
+            Console.WriteLine(
+                $"CALLBACK HIT, storing token: {response.AccessToken?.Substring(0, 20)}"
+            );
             _tokenService.Store(response.AccessToken, response.RefreshToken);
+            Console.WriteLine(
+                $"TOKEN STORED, GetToken returns: {_tokenService.GetToken()?.Substring(0, 20)}"
+            );
 
             return Redirect($"http://localhost:5173/?token={response.AccessToken}");
         }

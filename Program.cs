@@ -14,6 +14,8 @@ builder.Services.AddCors(o =>
     )
 );
 builder.Services.AddSingleton<SpotifyTokenService>();
+builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IMusicBrainzService, MusicBrainzService>();
 
 var app = builder.Build();
 

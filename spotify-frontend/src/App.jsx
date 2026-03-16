@@ -373,6 +373,31 @@ export default function App() {
     finally { setLoading(false); }
   };
 
+
+  const pollNowPlaying = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/api/spotify/current`);
+      if (res.status === 204) {
+        setNowPlaying(prev => prev ? { ...prev, isPlaying: false } : null);
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setNowPlaying(prev => {
+        const prevId = prev?.id ?? prev?.Id;
+        const newId = data?.id ?? data?.Id;
+        if (newId && newId !== prevId) setProgressMs(data.progressMs ?? 0);
+        return data;
+      });
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    if (tab !== "now-playing" || !token) return;
+    const id = setInterval(pollNowPlaying, 10000);
+    return () => clearInterval(id);
+  }, [tab, token]);
   const handleGo = () => {
     if (tab === "track") fetchTrack();
     else if (tab === "search") fetchSearch();
@@ -595,6 +620,7 @@ export default function App() {
 
         {/* Now playing */}
         {tab === "now-playing" && nowPlaying && !loading && (() => {
+          const isPlaying = nowPlaying?.isPlaying !== false;
           const art = nowPlaying?.album?.images?.[0]?.url ?? nowPlaying?.coverUrl;
           const name = nowPlaying?.name ?? nowPlaying?.title;
           const artists = Array.isArray(nowPlaying?.artists)
@@ -604,32 +630,51 @@ export default function App() {
           const duration = nowPlaying?.durationMs ?? nowPlaying?.duration_ms ?? (nowPlaying?.duration ? nowPlaying.duration * 1000 : 0);
           const progress = Math.min(progressMs, duration);
           const pct = duration ? (progress / duration) * 100 : 0;
+          const explicit = nowPlaying?.explicit ?? false;
+          const genres = nowPlaying?.genres ?? [];
+          const bpm = nowPlaying?.bpm ?? null;
+          const key = nowPlaying?.key ?? null;
+          const releaseDate = nowPlaying?.releaseDate ?? null;
           return (
-            <div className="now-playing">
-              <div className="np-header"><span className="np-dot" />Now Playing</div>
-              <div className="np-body">
-                {art ? <img src={art} alt="art" className="np-art" /> : <div className="np-art-ph">♪</div>}
-                <div className="np-info">
-                  <div className="np-title">{name}</div>
-                  <div className="np-artist">{artists}</div>
-                  {albumName && <div className="np-album">💿 {albumName}</div>}
-                  <div className="np-progress">
-                    <span className="np-time">{msToTime(progress)}</span>
-                    <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
-                    <span className="np-time">{msToTime(duration)}</span>
+            <>
+              <div className="now-playing" style={{ opacity: isPlaying ? 1 : 0.45 }}>
+                <div className="np-header">
+                  <span className="np-dot" style={{ background: isPlaying ? "var(--ink)" : "var(--muted)" }} />
+                  {isPlaying ? "Now Playing" : "Paused"}
+                </div>
+                <div className="np-body">
+                  {art ? <img src={art} alt="art" className="np-art" /> : <div className="np-art-ph">♪</div>}
+                  <div className="np-info">
+                    <div className="np-title">{name}</div>
+                    <div className="np-artist">{artists}</div>
+                    {albumName && <div className="np-album">💿 {albumName}{releaseDate ? ` · ${releaseDate}` : ""}</div>}
+                    <div className="tags" style={{ marginTop: 8 }}>
+                      <span className="tag" style={{ borderColor: explicit ? "var(--accent2)" : "var(--border)", color: explicit ? "var(--accent2)" : "var(--muted)", background: explicit ? "#fff0ee" : "var(--paper)" }}>
+                        {explicit ? "EXPLICIT" : "CLEAN"}
+                      </span>
+                      {duration > 0 && <span className="tag">{msToTime(duration)}</span>}
+                      {bpm ? <span className="tag">{bpm} BPM</span> : <span className="tag" style={{ opacity: .45 }}>BPM —</span>}
+                      {key ? <span className="tag">{key}</span> : <span className="tag" style={{ opacity: .45 }}>KEY —</span>}
+                      {genres.length > 0
+                        ? genres.slice(0, 2).map(g => <span key={g} className="tag">{g}</span>)
+                        : <span className="tag" style={{ opacity: .45 }}>GENRE —</span>
+                      }
+                    </div>
+                    <div className="np-progress">
+                      <span className="np-time">{msToTime(progress)}</span>
+                      <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
+                      <span className="np-time">{msToTime(duration)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+              <div className="json-section">
+                <button className="json-toggle" onClick={() => setShowJson(v => !v)}>{showJson ? "▲ Hide" : "▼ Show"} raw JSON</button>
+                {showJson && <pre>{JSON.stringify(nowPlaying, null, 2)}</pre>}
+              </div>
+            </>
           );
         })()}
-
-        {tab === "now-playing" && !nowPlaying && !loading && !error && token && (
-          <div className="empty">
-            <div className="empty-label">No playback detected</div>
-            <p style={{ color: "var(--muted)", fontSize: ".82rem" }}>Nothing is currently playing. Start something on Spotify and hit Refresh.</p>
-          </div>
-        )}
 
         {!hasResult && !loading && !error && (
           <div className="empty">
