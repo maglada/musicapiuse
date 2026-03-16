@@ -17,8 +17,9 @@ namespace SpotifyWebApp.Services
             return _spotify;
         }
 
-        public SpotifyService(IConfiguration config)
+        public SpotifyService(IConfiguration config, SpotifyTokenService tokenService)
         {
+            _tokenService = tokenService;
             var clientId = config["Spotify:ClientId"];
             var clientSecret = config["Spotify:ClientSecret"];
 
@@ -51,17 +52,17 @@ namespace SpotifyWebApp.Services
 
         public async Task<FullTrack> GetTrackAsync(string trackId)
         {
-            return await _spotify.Tracks.Get(trackId);
+            return await GetClient(_tokenService.GetToken()).Tracks.Get(trackId);
         }
 
         public async Task<FullAlbum> GetAlbumAsync(string albumId)
         {
-            return await _spotify.Albums.Get(albumId);
+            return await GetClient(_tokenService.GetToken()).Albums.Get(albumId);
         }
 
         public async Task<FullArtist> GetArtistAsync(string artistId)
         {
-            return await _spotify.Artists.Get(artistId);
+            return await GetClient(_tokenService.GetToken()).Artists.Get(artistId);
         }
     }
 }
