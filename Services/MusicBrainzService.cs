@@ -19,12 +19,16 @@ namespace SpotifyWebApp.Services
         {
             var result = new MusicBrainzResult();
 
-            // Step 1 — find recording ID by ISRC
-            var searchUrl = $"https://musicbrainz.org/ws/2/isrc/{isrc}?fmt=json&inc=genres+tags";
-            var searchRes = await _http.GetAsync(searchUrl);
+            var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"https://musicbrainz.org/ws/2/isrc/{isrc}?fmt=json&inc=genres+tags"
+            );
+            request.Headers.UserAgent.ParseAdd("BreakMusic/1.0 (vitaliioperrenko@gmail.com)");
+
+            var searchRes = await _http.SendAsync(request);
+
             if (!searchRes.IsSuccessStatusCode)
                 return result;
-
             var searchJson = await searchRes.Content.ReadAsStringAsync();
             Console.WriteLine(
                 $"MB ISRC response: {searchJson.Substring(0, Math.Min(500, searchJson.Length))}"
@@ -46,9 +50,12 @@ namespace SpotifyWebApp.Services
             }
 
             // Step 2 — fetch full recording with tags and genres
-            var recordingUrl =
-                $"https://musicbrainz.org/ws/2/recording/{recordingId}?fmt=json&inc=tags+genres";
-            var recordingRes = await _http.GetAsync(recordingUrl);
+            var request2 = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"https://musicbrainz.org/ws/2/recording/{recordingId}?fmt=json&inc=tags+genres"
+            );
+            request2.Headers.UserAgent.ParseAdd("BreakMusic/1.0 (vitaliioperrenko@gmail.com)");
+            var recordingRes = await _http.SendAsync(request2);
             if (!recordingRes.IsSuccessStatusCode)
                 return result;
 
