@@ -54,10 +54,11 @@ namespace SpotifyWebApp.Controllers
                     Artists = track.Artists?.Select(a => a.Name).ToList(),
                     Album = track.Album?.Name,
                     Duration = track.DurationMs / 1000,
-                    Popularity = track.Popularity,
                     Explicit = track.Explicit,
                     Genres = mb.Genres,
                     ReleaseDate = mb.ReleaseDate,
+                    Bpm = mb.Bpm,
+                    Key = mb.Key,
                 };
                 return Ok(track_dto);
             }
