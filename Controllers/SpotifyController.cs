@@ -17,18 +17,21 @@ namespace SpotifyWebApp.Controllers
         private readonly IConfiguration _config;
         private readonly SpotifyTokenService _tokenService;
         private readonly IMusicBrainzService _musicBrainz;
+        private readonly IAudioDbService _audioDb;
 
         public SpotifyController(
             ISpotifyService spotifyService,
             IConfiguration config,
             SpotifyTokenService tokenService,
-            IMusicBrainzService musicBrainz
+            IMusicBrainzService musicBrainz,
+            IAudioDbService audioDb
         )
         {
             _spotifyService = spotifyService;
             _config = config;
             _tokenService = tokenService;
             _musicBrainz = musicBrainz;
+            _audioDb = audioDb;
         }
 
         [HttpGet("track/{id}")]
@@ -46,6 +49,7 @@ namespace SpotifyWebApp.Controllers
                     isrc != null
                         ? await _musicBrainz.GetByIsrcAsync(isrc)
                         : new MusicBrainzResult();
+                var ad = await _audioDb.GetAudioDbResultsAsync(id);
                 var track_dto = new TrackDto
                 {
                     Id = track.Id,
@@ -57,8 +61,7 @@ namespace SpotifyWebApp.Controllers
                     Explicit = track.Explicit,
                     Genres = mb.Genres,
                     ReleaseDate = mb.ReleaseDate,
-                    Bpm = mb.Bpm,
-                    Key = mb.Key,
+                    Mood = ad.Mood,
                 };
                 return Ok(track_dto);
             }
