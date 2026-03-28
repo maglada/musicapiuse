@@ -170,8 +170,7 @@ namespace SpotifyWebApp.Controllers
             }
         }
 
-        //TODO-MAYBE: add ablity to filter underground(lower from 50/100 pop) and pop, enhancing it via recs for user or overall if not login
-
+        // TODO Create "experience" endpoint that shows what albums you played back to back, what tracks from there, and what artists, and maybe even what genres
         [HttpGet("login")]
         public IActionResult Login()
         {

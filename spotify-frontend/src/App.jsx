@@ -16,9 +16,22 @@ const css = `
     --text: #1a1a1a;
     --muted: #7a7568;
     --border: #c8c4b8;
+    --card-bg: #fff;
     --display: 'Bebas Neue', sans-serif;
     --body: 'Instrument Sans', sans-serif;
     --mono: 'Space Mono', monospace;
+  }
+
+  body.dark {
+    --ink: #3a3830;
+    --paper: #111110;
+    --paper2: #1c1b19;
+    --accent: #b8dc30;
+    --accent2: #e04428;
+    --text: #d4d0c8;
+    --muted: #6a6660;
+    --border: #2a2925;
+    --card-bg: #191917;
   }
 
   html, body, #root {
@@ -87,6 +100,14 @@ const css = `
   .auth-btn.out { background: none; color: var(--muted); }
   .auth-btn.out:hover { background: var(--accent2); color: #fff; border-color: var(--accent2); }
 
+  .theme-btn {
+    font-size: 1rem; line-height: 1;
+    padding: 4px 6px; border: 1.5px solid var(--border); border-radius: 2px;
+    background: none; color: var(--muted); cursor: pointer;
+    transition: all .15s; flex-shrink: 0;
+  }
+  .theme-btn:hover { border-color: var(--ink); color: var(--text); }
+
   /* MAIN */
   main {
     position: relative; z-index: 1;
@@ -122,7 +143,7 @@ const css = `
   }
   .input-block input {
     flex: 1; min-width: 0;
-    background: #fff; border: none; outline: none;
+    background: var(--card-bg); border: none; outline: none;
     font-family: var(--mono); font-size: clamp(.73rem, 1.1vw, .85rem);
     padding: clamp(11px, 1.6vw, 15px) clamp(12px, 1.8vw, 18px);
     color: var(--text);
@@ -147,7 +168,7 @@ const css = `
     font-family: var(--mono); font-size: clamp(.58rem, .85vw, .66rem);
     letter-spacing: .07em; text-transform: uppercase;
     padding: 5px 14px; border: none; border-right: 1px solid var(--border);
-    background: #fff; color: var(--muted); cursor: pointer; transition: all .12s;
+    background: var(--card-bg); color: var(--muted); cursor: pointer; transition: all .12s;
   }
   .type-btn:last-child { border-right: none; }
   .type-btn:hover { background: var(--paper2); color: var(--text); }
@@ -160,7 +181,7 @@ const css = `
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* CARD */
-  .card { border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; background: #fff; }
+  .card { border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; background: var(--card-bg); }
   .card-hero { display: flex; align-items: stretch; border-bottom: 2px solid var(--ink); }
   .card-art { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); object-fit: cover; flex-shrink: 0; display: block; border-right: 2px solid var(--ink); }
   .card-art-ph { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(1.8rem, 4vw, 3rem); border-right: 2px solid var(--ink); }
@@ -177,7 +198,7 @@ const css = `
   .sp-link:hover { background: #222; }
 
   /* NOW PLAYING */
-  .now-playing { border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; background: #fff; }
+  .now-playing { border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; background: var(--card-bg); }
   .np-header { display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-bottom: 2px solid var(--ink); font-family: var(--mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--paper2); }
   .np-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); border: 1.5px solid var(--ink); animation: pulse 1.2s ease-in-out infinite; flex-shrink: 0; }
   .np-body { display: flex; align-items: stretch; }
@@ -199,7 +220,7 @@ const css = `
   th { font-family: var(--mono); font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 7px clamp(10px, 1.5vw, 18px); text-align: left; background: var(--paper2); border-bottom: 1px solid var(--border); white-space: nowrap; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr.active-row { background: #f0ffe0; }
+  tbody tr.active-row { background: color-mix(in srgb, var(--accent) 15%, var(--paper)); }
   tbody tr:not(.active-row):hover { background: var(--paper2); }
   td { padding: clamp(7px, 1.1vw, 11px) clamp(10px, 1.5vw, 18px); font-size: clamp(.74rem, 1vw, .82rem); vertical-align: middle; }
   .td-num { font-family: var(--mono); font-size: .64rem; color: var(--muted); width: 28px; }
@@ -213,7 +234,7 @@ const css = `
   .results-count { font-family: var(--mono); font-size: .62rem; color: var(--muted); white-space: nowrap; }
   .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(480px, 100%), 1fr)); gap: 3px; }
 
-  .result-item { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: #fff; border: 1px solid var(--border); cursor: pointer; transition: all .12s; animation: fadeUp .3s ease both; }
+  .result-item { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; transition: all .12s; animation: fadeUp .3s ease both; }
   .result-item:hover { background: var(--paper2); border-color: var(--ink); }
   .result-thumb { width: 64px; height: 64px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); display: block; }
   .result-thumb-ph { width: 64px; height: 64px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 1px solid var(--border); }
@@ -223,7 +244,7 @@ const css = `
   .result-meta { font-family: var(--mono); font-size: .66rem; color: var(--muted); flex-shrink: 0; text-align: right; }
 
   /* ARTIST RESULT ITEM */
-  .artist-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: #fff; border: 1px solid var(--border); animation: fadeUp .3s ease both; }
+  .artist-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); animation: fadeUp .3s ease both; }
   .artist-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--ink); display: block; }
   .artist-avatar-ph { width: 64px; height: 64px; border-radius: 50%; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; border: 2px solid var(--ink); }
   .artist-info { min-width: 0; flex: 1; }
@@ -231,7 +252,7 @@ const css = `
   .artist-sub { font-family: var(--mono); font-size: .64rem; color: var(--muted); margin-top: 4px; }
 
   /* ALBUM RESULT ITEM */
-  .album-item { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: #fff; border: 1px solid var(--border); animation: fadeUp .3s ease both; }
+  .album-item { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); animation: fadeUp .3s ease both; }
   .album-thumb { width: 64px; height: 64px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); display: block; }
   .album-thumb-ph { width: 64px; height: 64px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 1px solid var(--border); }
   .album-info { min-width: 0; flex: 1; }
@@ -243,7 +264,7 @@ const css = `
   .json-section { margin-top: 18px; }
   .json-toggle { font-family: var(--mono); font-size: .63rem; letter-spacing: .05em; background: none; border: 1.5px solid var(--border); border-radius: 2px; padding: 5px 12px; cursor: pointer; color: var(--muted); transition: all .12s; margin-bottom: 6px; }
   .json-toggle:hover { border-color: var(--ink); color: var(--text); }
-  pre { background: var(--ink); color: #777; border-radius: 4px; padding: clamp(12px, 1.8vw, 18px); font-family: var(--mono); font-size: clamp(.6rem, .85vw, .68rem); overflow: auto; max-height: 38vh; line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+  pre { background: #111; color: #888; border-radius: 4px; padding: clamp(12px, 1.8vw, 18px); font-family: var(--mono); font-size: clamp(.6rem, .85vw, .68rem); overflow: auto; max-height: 38vh; line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
 
   /* EMPTY */
   .empty { padding: clamp(28px, 6vw, 68px) 0; display: flex; flex-direction: column; gap: 4px; animation: fadeUp .5s ease both; }
@@ -252,7 +273,7 @@ const css = `
   .endpoint { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); }
   .endpoint:last-child { border-bottom: none; }
   .ep-method { font-family: var(--mono); font-size: .58rem; letter-spacing: .06em; padding: 9px 12px; background: var(--ink); color: var(--accent); flex-shrink: 0; min-width: 48px; text-align: center; display: flex; align-items: center; justify-content: center; }
-  .ep-path { font-family: var(--mono); font-size: clamp(.63rem, .95vw, .72rem); padding: 9px 14px; flex: 1; background: #fff; border-right: 1px solid var(--border); word-break: break-all; }
+  .ep-path { font-family: var(--mono); font-size: clamp(.63rem, .95vw, .72rem); padding: 9px 14px; flex: 1; background: var(--card-bg); border-right: 1px solid var(--border); word-break: break-all; }
   .ep-desc { font-size: clamp(.63rem, .95vw, .72rem); color: var(--muted); padding: 9px 14px; background: var(--paper2); flex: 1.2; }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -297,6 +318,7 @@ function getTrackDisplay(t) {
 }
 
 export default function App() {
+  const [dark, setDark] = useState(() => localStorage.getItem("bm_dark") === "1");
   const [tab, setTab] = useState("track");
   const [token, setToken] = useState(() => sessionStorage.getItem("sp_token") || "");
   const [query, setQuery] = useState("");
@@ -309,6 +331,11 @@ export default function App() {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [progressMs, setProgressMs] = useState(0);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", dark);
+    localStorage.setItem("bm_dark", dark ? "1" : "0");
+  }, [dark]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -398,6 +425,20 @@ export default function App() {
     const id = setInterval(pollNowPlaying, 10000);
     return () => clearInterval(id);
   }, [tab, token]);
+  const fetchTrackAndNavigate = async (spotifyTrack) => {
+    const id = spotifyTrack?.id;
+    if (!id) return;
+    setError(""); setLoading(true);
+    setTrackResult(null); setShowJson(false);
+    setTab("track");
+    try {
+      const res = await fetch(`${API}/api/spotify/track/${encodeURIComponent(id)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${(await res.text().catch(() => "")).slice(0, 120)}`);
+      setTrackResult(await res.json());
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
   const handleGo = () => {
     if (tab === "track") fetchTrack();
     else if (tab === "search") fetchSearch();
@@ -424,6 +465,9 @@ export default function App() {
           ))}
         </div>
         <div className="nav-auth">
+          <button className="theme-btn" onClick={() => setDark(d => !d)} title="Toggle dark mode">
+            {dark ? "☀" : "◑"}
+          </button>
           {token
             ? <><span className="auth-status">● connected</span><button className="auth-btn out" onClick={() => { setToken(""); sessionStorage.removeItem("sp_token"); }}>Sign out</button></>
             : <button className="auth-btn" onClick={() => { window.location.href = `${API}/api/spotify/login`; }}>Connect Spotify</button>
@@ -477,6 +521,10 @@ export default function App() {
         {/* Track result */}
         {tab === "track" && trackResult && !loading && (() => {
           const d = getTrackDisplay(trackResult);
+          const genres = trackResult?.genres ?? [];
+          const bpm = trackResult?.bpm ?? null;
+          const key = trackResult?.key ?? null;
+          const explicit = trackResult?.explicit ?? false;
           return (
             <>
               <div className="card">
@@ -488,10 +536,17 @@ export default function App() {
                     <div className="card-artists">{d.artists}</div>
                     {d.albumName && <div className="card-album">💿 {d.albumName}{d.releaseDate ? ` · ${d.releaseDate}` : ""}</div>}
                     <div className="tags">
-                      {d.popularity != null && <span className="tag hi">Pop {d.popularity}</span>}
+                      <span className="tag" style={{ borderColor: explicit ? "var(--accent2)" : "var(--border)", color: explicit ? "var(--accent2)" : "var(--muted)", background: explicit ? "#fff0ee" : "var(--paper)" }}>
+                        {explicit ? "EXPLICIT" : "CLEAN"}
+                      </span>
                       {d.duration && <span className="tag">{msToTime(d.duration)}</span>}
                       {d.trackNumber && <span className="tag">#{d.trackNumber}</span>}
-                      {d.explicit && <span className="tag red">EXPLICIT</span>}
+                      {bpm ? <span className="tag">{bpm} BPM</span> : <span className="tag" style={{ opacity: .45 }}>BPM —</span>}
+                      {key ? <span className="tag">{key}</span> : <span className="tag" style={{ opacity: .45 }}>KEY —</span>}
+                      {genres.length > 0
+                        ? genres.slice(0, 2).map(g => <span key={g} className="tag">{g}</span>)
+                        : <span className="tag" style={{ opacity: .45 }}>GENRE —</span>
+                      }
                       {d.albumTotal > 0 && <span className="tag">{d.albumTotal} tracks</span>}
                     </div>
                     {d.spotifyUrl && <a href={d.spotifyUrl} target="_blank" rel="noopener noreferrer" className="sp-link">Open in Spotify ↗</a>}
@@ -529,93 +584,67 @@ export default function App() {
 
         {/* Search results */}
         {tab === "search" && searchResults && !loading && (
-          selectedTrack ? (() => {
-            const d = getTrackDisplay(selectedTrack);
-            return (
-              <>
-                <button className="json-toggle" style={{ marginBottom: 14 }} onClick={() => setSelectedTrack(null)}>← Back</button>
-                <div className="card">
-                  <div className="card-hero">
-                    {d.art ? <img src={d.art} alt="art" className="card-art" /> : <div className="card-art-ph">♪</div>}
-                    <div className="card-meta">
-                      <div className="card-type">Track</div>
-                      <div className="card-title">{d.name}</div>
-                      <div className="card-artists">{d.artists}</div>
-                      {d.albumName && <div className="card-album">💿 {d.albumName}</div>}
-                      <div className="tags">
-                        {d.popularity != null && <span className="tag hi">Pop {d.popularity}</span>}
-                        {d.duration && <span className="tag">{msToTime(d.duration)}</span>}
-                        {d.explicit && <span className="tag red">EXPLICIT</span>}
-                      </div>
-                      {d.spotifyUrl && <a href={d.spotifyUrl} target="_blank" rel="noopener noreferrer" className="sp-link">Open in Spotify ↗</a>}
+          <>
+            <div className="results-header">
+              <h2>Results</h2>
+              <span className="results-count">{searchResults.items.length} {searchResults.type}s</span>
+            </div>
+            <div className="results-grid">
+              {searchResults.type === "track" && searchResults.items.map((t, i) => {
+                const d = getTrackDisplay(t);
+                const thumb = d.art ?? t?.album?.images?.[2]?.url;
+                return (
+                  <div key={t.id ?? i} className="result-item" onClick={() => fetchTrackAndNavigate(t)}>
+                    {thumb ? <img src={thumb} alt="" className="result-thumb" /> : <div className="result-thumb-ph">♪</div>}
+                    <div className="result-info">
+                      <div className="result-name">{d.name}</div>
+                      <div className="result-sub">{d.artists} · {t?.album?.name}</div>
                     </div>
+                    <div className="result-meta">{msToTime(d.duration)}</div>
                   </div>
-                </div>
-              </>
-            );
-          })() : (
-            <>
-              <div className="results-header">
-                <h2>Results</h2>
-                <span className="results-count">{searchResults.items.length} {searchResults.type}s</span>
-              </div>
-              <div className="results-grid">
-                {searchResults.type === "track" && searchResults.items.map((t, i) => {
-                  const d = getTrackDisplay(t);
-                  const thumb = d.art ?? t?.album?.images?.[2]?.url;
-                  return (
-                    <div key={t.id ?? i} className="result-item" onClick={() => setSelectedTrack(t)}>
-                      {thumb ? <img src={thumb} alt="" className="result-thumb" /> : <div className="result-thumb-ph">♪</div>}
-                      <div className="result-info">
-                        <div className="result-name">{d.name}</div>
-                        <div className="result-sub">{d.artists} · {t?.album?.name}</div>
-                      </div>
-                      <div className="result-meta">{msToTime(d.duration)}</div>
-                    </div>
-                  );
-                })}
+                );
+              })}
 
-                {searchResults.type === "artist" && searchResults.items.map((a, i) => {
-                  const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
-                  return (
-                    <div key={a.id ?? i} className="artist-item">
-                      {img ? <img src={img} alt="" className="artist-avatar" /> : <div className="artist-avatar-ph">👤</div>}
-                      <div className="artist-info">
-                        <div className="artist-name-text">{a.name}</div>
-                        <div className="artist-sub">
-                          {a.popularity != null ? `Pop ${a.popularity}` : "Artist"}
-                          {a.genres?.length ? ` · ${a.genres.slice(0, 2).join(", ")}` : ""}
-                        </div>
+              {searchResults.type === "artist" && searchResults.items.map((a, i) => {
+                const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
+                return (
+                  <div key={a.id ?? i} className="artist-item">
+                    {img ? <img src={img} alt="" className="artist-avatar" /> : <div className="artist-avatar-ph">👤</div>}
+                    <div className="artist-info">
+                      <div className="artist-name-text">{a.name}</div>
+                      <div className="artist-sub">
+                        {a.popularity != null ? `Pop ${a.popularity}` : "Artist"}
+                        {a.genres?.length ? ` · ${a.genres.slice(0, 2).join(", ")}` : ""}
                       </div>
+                    </div>
+                    {a.externalUrls?.spotify && (
+                      <a href={a.externalUrls.spotify} target="_blank" rel="noopener noreferrer" className="sp-link" style={{ marginTop: 0 }}>↗</a>
+                    )}
+                  </div>
+                );
+              })}
+
+              {searchResults.type === "album" && searchResults.items.map((a, i) => {
+                const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
+                const artistNames = a?.artists?.map(x => x.name).join(", ");
+                return (
+                  <div key={a.id ?? i} className="album-item">
+                    {img ? <img src={img} alt="" className="album-thumb" /> : <div className="album-thumb-ph">💿</div>}
+                    <div className="album-info">
+                      <div className="album-name-text">{a.name}</div>
+                      <div className="album-sub">{artistNames}{a.releaseDate ? ` · ${a.releaseDate.slice(0, 4)}` : ""}</div>
+                    </div>
+                    <div className="album-meta">
+                      {a.totalTracks} tracks
                       {a.externalUrls?.spotify && (
-                        <a href={a.externalUrls.spotify} target="_blank" rel="noopener noreferrer" className="sp-link" style={{ marginTop: 0 }}>↗</a>
+                        <><br /><a href={a.externalUrls.spotify} target="_blank" rel="noopener noreferrer" className="sp-link" style={{ marginTop: 6, padding: "4px 8px" }}>↗</a></>
                       )}
                     </div>
-                  );
-                })}
-
-                {searchResults.type === "album" && searchResults.items.map((a, i) => {
-                  const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
-                  const artistNames = a?.artists?.map(x => x.name).join(", ");
-                  return (
-                    <div key={a.id ?? i} className="album-item">
-                      {img ? <img src={img} alt="" className="album-thumb" /> : <div className="album-thumb-ph">💿</div>}
-                      <div className="album-info">
-                        <div className="album-name-text">{a.name}</div>
-                        <div className="album-sub">{artistNames}{a.releaseDate ? ` · ${a.releaseDate.slice(0, 4)}` : ""}</div>
-                      </div>
-                      <div className="album-meta">
-                        {a.totalTracks} tracks
-                        {a.externalUrls?.spotify && (
-                          <><br /><a href={a.externalUrls.spotify} target="_blank" rel="noopener noreferrer" className="sp-link" style={{ marginTop: 6, padding: "4px 8px" }}>↗</a></>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* Now playing */}

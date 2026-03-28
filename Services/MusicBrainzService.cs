@@ -39,12 +39,6 @@ namespace SpotifyWebApp.Services
             var recordingId = first.GetProperty("id").GetString();
             if (first.TryGetProperty("first-release-date", out var date))
                 result.ReleaseDate = date.GetString();
-            if (first.TryGetProperty("bpm", out var bpm))
-                result.Bpm = bpm.GetInt32();
-            if (first.TryGetProperty("key", out var key))
-                result.Key = key.GetString() ?? "";
-
-            // Step 3 — fetch genres from recording
             var request2 = new HttpRequestMessage(
                 HttpMethod.Get,
                 $"https://musicbrainz.org/ws/2/recording/{recordingId}?fmt=json&inc=tags+genres"
