@@ -1,12 +1,7 @@
 namespace SpotifyWebApp.Interfaces
 {
-    public class AudioDbResult
+    public interface IAudioDbService
     {
-        public string strMood { get; set; } = "";
-    }
-
-    public interface AudioDbResultService
-    {
-        Task<AudioDbResult> GetAudioDbResultAsync(string query);
+        Task<AudioDbResult> GetAudioDbResultsAsync(string artist, string trackName);
     }
 }

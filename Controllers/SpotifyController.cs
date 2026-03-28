@@ -49,7 +49,10 @@ namespace SpotifyWebApp.Controllers
                     isrc != null
                         ? await _musicBrainz.GetByIsrcAsync(isrc)
                         : new MusicBrainzResult();
-                var ad = await _audioDb.GetAudioDbResultsAsync(id);
+                var ad = await _audioDb.GetAudioDbResultsAsync(
+                    artist: track.Artists?.FirstOrDefault()?.Name ?? "",
+                    trackName: track.Name
+                );
                 var track_dto = new TrackDto
                 {
                     Id = track.Id,
