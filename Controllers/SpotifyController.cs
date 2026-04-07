@@ -188,10 +188,46 @@ namespace SpotifyWebApp.Controllers
                     Scopes.UserReadPrivate,
                     Scopes.UserReadEmail,
                     Scopes.UserReadCurrentlyPlaying,
+                    Scopes.UserReadRecentlyPlayed,
                 },
             };
 
             return Redirect(loginRequest.ToUri().ToString());
+        }
+
+        [HttpGet("history")]
+        public async Task<IActionResult> GetRecentlyPlayed()
+        {
+            var token = _tokenService.GetToken();
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("User is not authenticated. Please log in.");
+            }
+
+            var spotify = new SpotifyClient(token);
+
+            var history = await spotify.Player.GetRecentlyPlayed(
+                new PlayerRecentlyPlayedRequest { Limit = 50 }
+            );
+            var results = history
+                .Items.Select(item =>
+                {
+                    var track = item.Track;
+                    return new TrackHistoryDto
+                    {
+                        Id = track.Id,
+                        Title = track.Name,
+                        CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
+                        Artists = track.Artists?.Select(a => a.Name).ToList(),
+                        Album = track.Album?.Name,
+                        Duration = track.DurationMs / 1000,
+                        Explicit = track.Explicit,
+                        PlayedAt = item.PlayedAt,
+                    };
+                })
+                .ToList();
+
+            return Ok(results);
         }
 
         [HttpGet("current")]

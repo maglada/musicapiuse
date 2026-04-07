@@ -260,6 +260,21 @@ const css = `
   .album-sub { font-family: var(--mono); font-size: .64rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; }
   .album-meta { font-family: var(--mono); font-size: .64rem; color: var(--muted); flex-shrink: 0; text-align: right; }
 
+  /* HISTORY */
+  .history { margin-top: 28px; }
+  .history-header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); margin-bottom: 14px; }
+  .history-header h3 { font-family: var(--display); font-size: clamp(1rem, 2vw, 1.4rem); letter-spacing: .04em; text-transform: uppercase; }
+  .history-header span { font-family: var(--mono); font-size: .58rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .history-list { display: flex; flex-direction: column; gap: 2px; }
+  .history-album { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; transition: all .12s; animation: fadeUp .3s ease both; }
+  .history-album:hover { border-color: var(--ink); background: var(--paper2); }
+  .history-art { width: 44px; height: 44px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); display: block; }
+  .history-art-ph { width: 44px; height: 44px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid var(--border); }
+  .history-info { flex: 1; min-width: 0; }
+  .history-album-name { font-size: .9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-album-sub { font-family: var(--mono); font-size: .6rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-count { font-family: var(--mono); font-size: .6rem; color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+
   /* JSON */
   .json-section { margin-top: 18px; }
   .json-toggle { font-family: var(--mono); font-size: .63rem; letter-spacing: .05em; background: none; border: 1.5px solid var(--border); border-radius: 2px; padding: 5px 12px; cursor: pointer; color: var(--muted); transition: all .12s; margin-bottom: 6px; }
@@ -331,6 +346,7 @@ export default function App() {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [progressMs, setProgressMs] = useState(0);
+  const [history, setHistory] = useState(null);
 
   useEffect(() => {
     document.body.classList.toggle("dark", dark);
@@ -400,6 +416,29 @@ export default function App() {
     finally { setLoading(false); }
   };
 
+  const fetchHistory = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/api/spotify/history`);
+      if (!res.ok) return;
+      const data = await res.json();
+      // group tracks into albums, preserving play order, deduplicating consecutive same-album runs
+      const albums = [];
+      for (const track of data) {
+        const albumName = track.album ?? "Unknown Album";
+        const art = track.coverUrl ?? null;
+        const last = albums[albums.length - 1];
+        if (last && last.album === albumName) {
+          last.tracks.push(track);
+          last.playedAt = track.playedAt; // keep earliest time in group
+        } else {
+          albums.push({ album: albumName, art, artists: track.artists, tracks: [track], playedAt: track.playedAt });
+        }
+      }
+      setHistory(albums);
+    } catch { /* silent */ }
+  };
+
 
   const pollNowPlaying = async () => {
     if (!token) return;
@@ -423,6 +462,13 @@ export default function App() {
   useEffect(() => {
     if (tab !== "now-playing" || !token) return;
     const id = setInterval(pollNowPlaying, 10000);
+    return () => clearInterval(id);
+  }, [tab, token]);
+
+  useEffect(() => {
+    if (tab !== "now-playing" || !token) return;
+    fetchHistory();
+    const id = setInterval(fetchHistory, 20000);
     return () => clearInterval(id);
   }, [tab, token]);
   const fetchTrackAndNavigate = async (spotifyTrack) => {
@@ -701,9 +747,60 @@ export default function App() {
                 <button className="json-toggle" onClick={() => setShowJson(v => !v)}>{showJson ? "▲ Hide" : "▼ Show"} raw JSON</button>
                 {showJson && <pre>{JSON.stringify(nowPlaying, null, 2)}</pre>}
               </div>
+              {history && history.length > 0 && (
+                <div className="history">
+                  <div className="history-header">
+                    <h3>Recent</h3>
+                    <span>{history.length} sessions</span>
+                  </div>
+                  <div className="history-list">
+                    {history.map((entry, i) => (
+                      <div key={i} className="history-album" onClick={() => fetchTrackAndNavigate({ id: entry.tracks[0]?.id })}>
+                        {entry.art
+                          ? <img src={entry.art} alt="" className="history-art" />
+                          : <div className="history-art-ph">💿</div>
+                        }
+                        <div className="history-info">
+                          <div className="history-album-name">{entry.album}</div>
+                          <div className="history-album-sub">{entry.artists?.join(", ")}</div>
+                        </div>
+                        <div className="history-count">
+                          {entry.tracks.length} {entry.tracks.length === 1 ? "track" : "tracks"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           );
         })()}
+
+        {tab === "now-playing" && !nowPlaying && !loading && history && history.length > 0 && (
+          <div className="history">
+            <div className="history-header">
+              <h3>Recent</h3>
+              <span>{history.length} sessions</span>
+            </div>
+            <div className="history-list">
+              {history.map((entry, i) => (
+                <div key={i} className="history-album" onClick={() => fetchTrackAndNavigate({ id: entry.tracks[0]?.id })}>
+                  {entry.art
+                    ? <img src={entry.art} alt="" className="history-art" />
+                    : <div className="history-art-ph">💿</div>
+                  }
+                  <div className="history-info">
+                    <div className="history-album-name">{entry.album}</div>
+                    <div className="history-album-sub">{entry.artists?.join(", ")}</div>
+                  </div>
+                  <div className="history-count">
+                    {entry.tracks.length} {entry.tracks.length === 1 ? "track" : "tracks"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!hasResult && !loading && !error && (
           <div className="empty">
