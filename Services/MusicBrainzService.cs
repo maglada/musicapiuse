@@ -6,6 +6,7 @@ namespace SpotifyWebApp.Services
     public class MusicBrainzService : IMusicBrainzService
     {
         private readonly HttpClient _http;
+        private readonly IMusicMetadataService _metadataService;
 
         public MusicBrainzService(HttpClient http)
         {
@@ -39,6 +40,10 @@ namespace SpotifyWebApp.Services
             var recordingId = first.GetProperty("id").GetString();
             if (first.TryGetProperty("first-release-date", out var date))
                 result.ReleaseDate = date.GetString();
+
+            var details = await _metadataService.GetTechnicalDetailsAsync($"{recordingId}");
+            Console.WriteLine($"BPM: {details.Bpm}, Key: {details.FullKey}");
+
             var request2 = new HttpRequestMessage(
                 HttpMethod.Get,
                 $"https://musicbrainz.org/ws/2/recording/{recordingId}?fmt=json&inc=tags+genres"

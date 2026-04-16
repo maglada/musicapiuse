@@ -10,33 +10,53 @@ namespace SpotifyWebApp.Services
         public AudioDbService(HttpClient http)
         {
             _http = http;
+            _http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
         }
 
         public async Task<AudioDbResult> GetAudioDbResultsAsync(string artist, string trackName)
         {
             var result = new AudioDbResult();
 
-            var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                $"https://www.theaudiodb.com/api/v1/json/2/searchtrack.php?s={artist}&t={trackName}"
-            );
-            var res = await _http.SendAsync(request);
-            if (!res.IsSuccessStatusCode)
-                return result;
-            var json = await res.Content.ReadAsStringAsync();
+            var encodedArtist = Uri.EscapeDataString(artist);
+            var encodedTrack = Uri.EscapeDataString(trackName);
 
-            Console.WriteLine(json);
-            var searchDoc = JsonDocument.Parse(json);
-            if (
-                !searchDoc.RootElement.TryGetProperty("track", out var tracks)
-                || tracks.GetArrayLength() == 0
-            )
-                return result;
-            var songMood = tracks[0].TryGetProperty("strMood", out var moodProp)
-                ? moodProp.GetString() is var s && s != null && s != "..."
-                    ? s
-                    : "unprovided"
-                : "unprovided";
+            var url =
+                $"https://www.theaudiodb.com/api/v1/json/2/searchtrack.php?s={encodedArtist}&t={encodedTrack}";
+
+            try
+            {
+                var res = await _http.GetAsync(url);
+                if (!res.IsSuccessStatusCode)
+                    return result;
+
+                var json = await res.Content.ReadAsStringAsync();
+
+                using var searchDoc = JsonDocument.Parse(json);
+
+                if (
+                    searchDoc.RootElement.TryGetProperty("track", out var tracks)
+                    && tracks.ValueKind == JsonValueKind.Array
+                )
+                {
+                    if (tracks.GetArrayLength() > 0)
+                    {
+                        var track = tracks[0];
+                        if (track.TryGetProperty("strMood", out var moodProp))
+                        {
+                            var mood = moodProp.GetString();
+                            result.Mood =
+                                (!string.IsNullOrEmpty(mood) && mood != "...")
+                                    ? mood
+                                    : "unprovided";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"AudioDb Error: {ex.Message}");
+            }
+
             return result;
         }
     }

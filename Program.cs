@@ -17,6 +17,7 @@ builder.Services.AddSingleton<SpotifyTokenService>();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<IMusicBrainzService, MusicBrainzService>();
 builder.Services.AddHttpClient<IAudioDbService, AudioDbService>();
+builder.Services.AddHttpClient<IMusicMetadataService, AcousticBrainzService>();
 
 var app = builder.Build();
 
