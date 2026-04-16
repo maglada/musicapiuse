@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using SpotifyAPI.Web;
 using SpotifyWebApp.Interfaces;
+using SpotifyWebApp.Models;
 using SpotifyWebApp.Services;
 
 namespace SpotifyWebApp.Controllers
@@ -18,13 +19,15 @@ namespace SpotifyWebApp.Controllers
         private readonly SpotifyTokenService _tokenService;
         private readonly IMusicBrainzService _musicBrainz;
         private readonly IAudioDbService _audioDb;
+        private readonly IMusicMetadataService _metadataService;
 
         public SpotifyController(
             ISpotifyService spotifyService,
             IConfiguration config,
             SpotifyTokenService tokenService,
             IMusicBrainzService musicBrainz,
-            IAudioDbService audioDb
+            IAudioDbService audioDb,
+            IMusicMetadataService metadataService
         )
         {
             _spotifyService = spotifyService;
@@ -32,49 +35,58 @@ namespace SpotifyWebApp.Controllers
             _tokenService = tokenService;
             _musicBrainz = musicBrainz;
             _audioDb = audioDb;
+            _metadataService = metadataService;
         }
 
         [HttpGet("track/{id}")]
         public async Task<IActionResult> GetTrack(string id)
         {
             if (string.IsNullOrEmpty(id))
-            {
                 return BadRequest("Track ID is required.");
-            }
+
             try
             {
                 var track = await _spotifyService.GetTrackAsync(id);
                 var isrc = track.ExternalIds?.GetValueOrDefault("isrc");
-                var mb =
-                    isrc != null
-                        ? await _musicBrainz.GetByIsrcAsync(isrc)
-                        : new MusicBrainzResult();
-                var ad = await _audioDb.GetAudioDbResultsAsync(
-                    artist: track.Artists?.FirstOrDefault()?.Name ?? "",
-                    trackName: track.Name
-                );
+
+                var mb = isrc != null ? await _musicBrainz.GetByIsrcAsync(isrc) : null;
+
+                MusicMetadataResult techData = new MusicMetadataResult();
+                if (mb != null && !string.IsNullOrEmpty(mb.RecordingId))
+                {
+                    techData = await _metadataService.GetTechnicalDetailsAsync(mb.RecordingId);
+                }
+
+                var ad =
+                    await _audioDb.GetAudioDbResultsAsync(
+                        artist: track.Artists?.FirstOrDefault()?.Name ?? "",
+                        trackName: track.Name
+                    ) ?? new AudioDbResult();
+
                 var track_dto = new TrackDto
                 {
                     Id = track.Id,
                     Title = track.Name,
                     CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
-                    Artists = track.Artists?.Select(a => a.Name).ToList(),
+                    Artists = track.Artists?.Select(a => a.Name).ToList() ?? new List<string>(),
                     Album = track.Album?.Name,
                     Duration = track.DurationMs / 1000,
                     Explicit = track.Explicit,
-                    Genres = mb.Genres,
-                    ReleaseDate = mb.ReleaseDate,
-                    Mood = ad.Mood,
+
+                    Genres = mb?.Genres ?? new List<string>(),
+                    ReleaseDate = mb?.ReleaseDate ?? "Unknown",
+
+                    Mood = !string.IsNullOrEmpty(ad.Mood) ? ad.Mood : techData.Mood,
+
+                    Bpm = techData.Bpm,
+                    Key = techData.FullKey,
                 };
+
                 return Ok(track_dto);
             }
             catch (Exception ex)
-                when (ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
             {
-                return NotFound($"track '{id}' not found on Spotify.");
-            }
-            catch (Exception ex)
-            {
+                Console.WriteLine($"[DEBUG ERROR]: {ex.Message}");
                 return StatusCode(500, $"Unexpected error: {ex.Message}");
             }
         }

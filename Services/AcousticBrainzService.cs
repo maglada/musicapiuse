@@ -25,47 +25,37 @@ namespace SpotifyWebApp.Services
             if (string.IsNullOrEmpty(recordingId))
                 return result;
 
+            var url = $"https://acousticbrainz.org/api/v1/{recordingId}/low-level";
+
             try
             {
-                var url = $"https://acousticbrainz.org/api/v1/{recordingId}/low-level";
                 var response = await _http.GetAsync(url);
-
                 if (!response.IsSuccessStatusCode)
                     return result;
 
                 var json = await response.Content.ReadAsStringAsync();
-                if (string.IsNullOrEmpty(json))
-                    return result;
-
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
                 if (
                     root.TryGetProperty("rhythm", out var rhythm)
-                    && rhythm.TryGetProperty("bpm", out var bpmProp)
+                    && rhythm.TryGetProperty("bpm", out var bpm)
                 )
                 {
-                    result.Bpm =
-                        bpmProp.ValueKind == JsonValueKind.Number
-                            ? Math.Round(bpmProp.GetDouble(), 1)
-                            : 0;
+                    result.Bpm = Math.Round(bpm.GetDouble(), 1);
                 }
 
                 if (root.TryGetProperty("tonal", out var tonal))
                 {
-                    if (tonal.TryGetProperty("key_key", out var key))
-                        result.Key = key.GetString() ?? "Unknown";
-
-                    if (tonal.TryGetProperty("key_scale", out var scale))
-                        result.Scale = scale.GetString() ?? "Unknown";
+                    if (tonal.TryGetProperty("key_key", out var k))
+                        result.Key = k.GetString() ?? "Unknown";
+                    if (tonal.TryGetProperty("key_scale", out var s))
+                        result.Scale = s.GetString() ?? "Unknown";
                 }
 
-                result.Mood = result.Scale.Contains("minor") ? "Somber" : "Bright";
+                result.Mood = result.Scale == "minor" ? "Somber" : "Bright";
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[AcousticBrainz Debug]: {ex.Message}");
-            }
+            catch { }
 
             return result;
         }

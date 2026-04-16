@@ -8,6 +8,8 @@ namespace DTOs
         public List<string> Artists { get; set; }
         public string Album { get; set; }
         public string Mood { get; set; }
+        public double Bpm { get; set; }
+        public string Key { get; set; }
         public int Duration { get; set; } // Duration in seconds
         public bool IsPlaying { get; set; }
         public int ProgressMs { get; set; }

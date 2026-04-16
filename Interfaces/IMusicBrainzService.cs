@@ -4,6 +4,7 @@ namespace SpotifyWebApp.Interfaces
     {
         public List<string> Genres { get; set; } = new();
         public string? ReleaseDate { get; set; }
+        public string RecordingId { get; set; } = "";
     }
 
     public interface IMusicBrainzService
