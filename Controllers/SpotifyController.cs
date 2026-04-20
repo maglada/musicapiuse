@@ -38,6 +38,40 @@ namespace SpotifyWebApp.Controllers
             _metadataService = metadataService;
         }
 
+        private async Task<TrackDto> GetTrackEnriched(string id)
+        {
+            var track = await _spotifyService.GetTrackAsync(id);
+            var isrc = track.ExternalIds?.GetValueOrDefault("isrc");
+
+            var mb = isrc != null ? await _musicBrainz.GetByIsrcAsync(isrc) : null;
+
+            MusicMetadataResult techData = new MusicMetadataResult();
+            if (mb != null && !string.IsNullOrEmpty(mb.RecordingId))
+                techData = await _metadataService.GetTechnicalDetailsAsync(mb.RecordingId);
+
+            var ad =
+                await _audioDb.GetAudioDbResultsAsync(
+                    artist: track.Artists?.FirstOrDefault()?.Name ?? "",
+                    trackName: track.Name
+                ) ?? new AudioDbResult();
+
+            return new TrackDto
+            {
+                Id = track.Id,
+                Title = track.Name,
+                CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
+                Artists = track.Artists?.Select(a => a.Name).ToList() ?? new List<string>(),
+                Album = track.Album?.Name,
+                Duration = track.DurationMs / 1000,
+                Explicit = track.Explicit,
+                Genres = mb?.Genres ?? new List<string>(),
+                ReleaseDate = mb?.ReleaseDate ?? "Unknown",
+                Mood = !string.IsNullOrEmpty(ad.Mood) ? ad.Mood : techData.Mood,
+                Bpm = techData.Bpm,
+                Key = techData.FullKey,
+            };
+        }
+
         [HttpGet("track/{id}")]
         public async Task<IActionResult> GetTrack(string id)
         {
@@ -46,43 +80,8 @@ namespace SpotifyWebApp.Controllers
 
             try
             {
-                var track = await _spotifyService.GetTrackAsync(id);
-                var isrc = track.ExternalIds?.GetValueOrDefault("isrc");
-
-                var mb = isrc != null ? await _musicBrainz.GetByIsrcAsync(isrc) : null;
-
-                MusicMetadataResult techData = new MusicMetadataResult();
-                if (mb != null && !string.IsNullOrEmpty(mb.RecordingId))
-                {
-                    techData = await _metadataService.GetTechnicalDetailsAsync(mb.RecordingId);
-                }
-
-                var ad =
-                    await _audioDb.GetAudioDbResultsAsync(
-                        artist: track.Artists?.FirstOrDefault()?.Name ?? "",
-                        trackName: track.Name
-                    ) ?? new AudioDbResult();
-
-                var track_dto = new TrackDto
-                {
-                    Id = track.Id,
-                    Title = track.Name,
-                    CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
-                    Artists = track.Artists?.Select(a => a.Name).ToList() ?? new List<string>(),
-                    Album = track.Album?.Name,
-                    Duration = track.DurationMs / 1000,
-                    Explicit = track.Explicit,
-
-                    Genres = mb?.Genres ?? new List<string>(),
-                    ReleaseDate = mb?.ReleaseDate ?? "Unknown",
-
-                    Mood = !string.IsNullOrEmpty(ad.Mood) ? ad.Mood : techData.Mood,
-
-                    Bpm = techData.Bpm,
-                    Key = techData.FullKey,
-                };
-
-                return Ok(track_dto);
+                var dto = await GetTrackEnriched(id);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
@@ -186,6 +185,39 @@ namespace SpotifyWebApp.Controllers
         }
 
         // TODO Create "experience" endpoint that shows what albums you played back to back, what tracks from there, and what artists, and maybe even what genres
+        [HttpPost("experience")]
+        public async Task<IActionResult> SaveMoment([FromBody] List<string> trackIds)
+        {
+            var token = _tokenService.GetToken();
+            if (string.IsNullOrEmpty(token))
+                return Unauthorized();
+
+            var spotify = new SpotifyClient(token);
+            var user = await spotify.UserProfile.Current();
+
+            var playlists = await spotify.Playlists.CurrentUsers();
+
+            int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
+            nextVol++;
+
+            var newPlaylist = await spotify.Playlists.Create(
+                user.Id,
+                new PlaylistCreateRequest($"Savior Tape Vol. {nextVol}")
+                {
+                    Public = false,
+                    Description = "Curated by Your moment",
+                }
+            );
+
+            var trackUris = trackIds.Select(id => $"spotify:track:{id}").ToList();
+            await spotify.Playlists.AddItems(
+                newPlaylist.Id,
+                new PlaylistAddItemsRequest(trackUris)
+            );
+
+            return Ok(new { Message = $"Saved to Vol. {nextVol}!", PlaylistId = newPlaylist.Id });
+        }
+
         [HttpGet("login")]
         public IActionResult Login()
         {
@@ -201,6 +233,8 @@ namespace SpotifyWebApp.Controllers
                     Scopes.UserReadEmail,
                     Scopes.UserReadCurrentlyPlaying,
                     Scopes.UserReadRecentlyPlayed,
+                    Scopes.PlaylistModifyPublic,
+                    Scopes.PlaylistModifyPrivate,
                 },
             };
 
@@ -245,31 +279,28 @@ namespace SpotifyWebApp.Controllers
         [HttpGet("current")]
         public async Task<IActionResult> GetCurrentPlaying()
         {
-            var spotify = new SpotifyClient(_tokenService.GetToken());
+            var token = _tokenService.GetToken();
+            if (string.IsNullOrEmpty(token))
+                return Unauthorized("User is not authenticated. Please log in.");
+
+            var spotify = new SpotifyClient(token);
             var current = await spotify.Player.GetCurrentlyPlaying(
                 new PlayerCurrentlyPlayingRequest()
             );
 
-            if (current.Item == null)
-            {
+            if (current?.Item == null)
                 return NotFound("No track is currently playing.");
-            }
+
             if (current.Item is FullTrack track)
             {
-                var track_dto = new TrackDto
-                {
-                    Id = track.Id,
-                    Title = track.Name,
-                    CoverUrl = track.Album?.Images?.FirstOrDefault()?.Url,
-                    Artists = track.Artists?.Select(a => a.Name).ToList(),
-                    Album = track.Album?.Name,
-                    Duration = track.DurationMs / 1000,
-                    IsPlaying = current.IsPlaying,
-                    ProgressMs = current.ProgressMs ?? 0,
-                    Explicit = track.Explicit,
-                };
-                return Ok(track_dto);
+                var enriched = await GetTrackEnriched(track.Id);
+
+                enriched.IsPlaying = current.IsPlaying;
+                enriched.ProgressMs = current.ProgressMs ?? 0;
+
+                return Ok(enriched);
             }
+
             return Ok(current);
         }
 
