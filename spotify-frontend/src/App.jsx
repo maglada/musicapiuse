@@ -228,6 +228,9 @@ const css = `
   .active-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
   .exp-tag { font-family: var(--mono); font-size: .52rem; color: var(--accent2); margin-left: 5px; vertical-align: middle; }
 
+  /* CLICKABLE TABLE ROW */
+  tbody tr.clickable { cursor: pointer; }
+
   /* RESULTS */
   .results-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); gap: 10px; }
   .results-header h2 { font-family: var(--display); font-size: clamp(1.1rem, 2.5vw, 1.8rem); letter-spacing: .04em; text-transform: uppercase; }
@@ -244,7 +247,8 @@ const css = `
   .result-meta { font-family: var(--mono); font-size: .66rem; color: var(--muted); flex-shrink: 0; text-align: right; }
 
   /* ARTIST RESULT ITEM */
-  .artist-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); animation: fadeUp .3s ease both; }
+  .artist-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); animation: fadeUp .3s ease both; cursor: pointer; transition: all .12s; }
+  .artist-item:hover { background: var(--paper2); border-color: var(--ink); }
   .artist-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--ink); display: block; }
   .artist-avatar-ph { width: 64px; height: 64px; border-radius: 50%; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; border: 2px solid var(--ink); }
   .artist-info { min-width: 0; flex: 1; }
@@ -252,13 +256,28 @@ const css = `
   .artist-sub { font-family: var(--mono); font-size: .64rem; color: var(--muted); margin-top: 4px; }
 
   /* ALBUM RESULT ITEM */
-  .album-item { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); animation: fadeUp .3s ease both; }
+  .album-item { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--border); animation: fadeUp .3s ease both; cursor: pointer; transition: all .12s; }
+  .album-item:hover { background: var(--paper2); border-color: var(--ink); }
   .album-thumb { width: 64px; height: 64px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); display: block; }
   .album-thumb-ph { width: 64px; height: 64px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 1px solid var(--border); }
   .album-info { min-width: 0; flex: 1; }
   .album-name-text { font-size: .94rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .album-sub { font-family: var(--mono); font-size: .64rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; }
   .album-meta { font-family: var(--mono); font-size: .64rem; color: var(--muted); flex-shrink: 0; text-align: right; }
+
+  /* ARTIST CARD (detail view) */
+  .artist-card { border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; background: var(--card-bg); }
+  .artist-card-hero { display: flex; align-items: stretch; border-bottom: 2px solid var(--ink); }
+  .artist-card-img { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); object-fit: cover; flex-shrink: 0; display: block; border-right: 2px solid var(--ink); }
+  .artist-card-img-ph { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2rem, 5vw, 4rem); border-right: 2px solid var(--ink); border-radius: 0; }
+  .artist-card-meta { padding: clamp(14px, 2.2vw, 26px); flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+  /* ALBUM CARD (detail view) */
+  .album-card { border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; background: var(--card-bg); }
+  .album-card-hero { display: flex; align-items: stretch; border-bottom: 2px solid var(--ink); }
+  .album-card-img { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); object-fit: cover; flex-shrink: 0; display: block; border-right: 2px solid var(--ink); }
+  .album-card-img-ph { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2rem, 5vw, 4rem); border-right: 2px solid var(--ink); }
+  .album-card-meta { padding: clamp(14px, 2.2vw, 26px); flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 
   /* HISTORY */
   .history { margin-top: 28px; }
@@ -275,11 +294,52 @@ const css = `
   .history-album-sub { font-family: var(--mono); font-size: .6rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .history-count { font-family: var(--mono); font-size: .6rem; color: var(--muted); flex-shrink: 0; white-space: nowrap; }
 
+  /* EXPERIENCE / SAVIOR TAPE */
+  .experience-section { margin-top: 20px; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; }
+  .experience-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; background: var(--paper2); border-bottom: 2px solid var(--ink); }
+  .experience-title { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .experience-count { font-family: var(--mono); font-size: .6rem; color: var(--muted); }
+  .experience-tracks { display: flex; flex-direction: column; }
+  .exp-track-row { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--border); transition: background .1s; }
+  .exp-track-row:last-child { border-bottom: none; }
+  .exp-track-row:hover { background: var(--paper2); }
+  .exp-track-check { width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 2px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .12s; background: var(--card-bg); }
+  .exp-track-check.checked { background: var(--ink); border-color: var(--ink); }
+  .exp-track-check.checked::after { content: '✓'; font-size: .55rem; color: var(--accent); font-weight: 700; }
+  .exp-track-art { width: 36px; height: 36px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+  .exp-track-art-ph { width: 36px; height: 36px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .9rem; border: 1px solid var(--border); }
+  .exp-track-info { flex: 1; min-width: 0; }
+  .exp-track-name { font-size: .85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .exp-track-sub { font-family: var(--mono); font-size: .6rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .exp-track-time { font-family: var(--mono); font-size: .6rem; color: var(--muted); flex-shrink: 0; }
+  .experience-footer { padding: 12px 18px; background: var(--paper2); border-top: 2px solid var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .exp-select-all { font-family: var(--mono); font-size: .6rem; letter-spacing: .05em; text-transform: uppercase; background: none; border: 1.5px solid var(--border); border-radius: 2px; padding: 5px 12px; cursor: pointer; color: var(--muted); transition: all .12s; }
+  .exp-select-all:hover { border-color: var(--ink); color: var(--text); }
+  .save-tape-btn {
+    font-family: var(--display); font-size: clamp(.9rem, 1.4vw, 1.1rem); letter-spacing: .08em;
+    padding: 8px 24px; background: var(--ink); color: var(--accent);
+    border: 2px solid var(--ink); border-radius: 2px; cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .save-tape-btn:hover { background: #222; }
+  .save-tape-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .tape-success { font-family: var(--mono); font-size: .7rem; color: var(--ink); background: var(--accent); border: 2px solid var(--ink); border-radius: 3px; padding: 8px 14px; margin-top: 10px; animation: fadeUp .3s ease both; }
+  .tape-success a { color: var(--ink); font-weight: 700; text-decoration: underline; }
+
   /* JSON */
   .json-section { margin-top: 18px; }
   .json-toggle { font-family: var(--mono); font-size: .63rem; letter-spacing: .05em; background: none; border: 1.5px solid var(--border); border-radius: 2px; padding: 5px 12px; cursor: pointer; color: var(--muted); transition: all .12s; margin-bottom: 6px; }
   .json-toggle:hover { border-color: var(--ink); color: var(--text); }
   pre { background: #111; color: #888; border-radius: 4px; padding: clamp(12px, 1.8vw, 18px); font-family: var(--mono); font-size: clamp(.6rem, .85vw, .68rem); overflow: auto; max-height: 38vh; line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+
+  /* BACK BUTTON */
+  .back-btn { font-family: var(--mono); font-size: .63rem; letter-spacing: .06em; text-transform: uppercase; background: none; border: 1.5px solid var(--border); border-radius: 2px; padding: 5px 12px; cursor: pointer; color: var(--muted); transition: all .12s; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .back-btn:hover { border-color: var(--ink); color: var(--text); }
+
+  /* POP SCORE BAR */
+  .pop-bar-wrap { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .pop-bar { flex: 1; max-width: 120px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .pop-bar-fill { height: 100%; background: var(--ink); border-radius: 2px; }
+  .pop-label { font-family: var(--mono); font-size: .58rem; color: var(--muted); }
 
   /* EMPTY */
   .empty { padding: clamp(28px, 6vw, 68px) 0; display: flex; flex-direction: column; gap: 4px; animation: fadeUp .5s ease both; }
@@ -298,7 +358,11 @@ const css = `
     .card-art, .card-art-ph { width: 100%; height: auto; aspect-ratio: 1 / 1; border-right: none; border-bottom: 2px solid var(--ink); }
     .np-body { flex-direction: column; }
     .np-art, .np-art-ph { width: 100%; height: auto; aspect-ratio: 1 / 1; border-right: none; border-bottom: 2px solid var(--ink); }
+    .artist-card-hero, .album-card-hero { flex-direction: column; }
+    .artist-card-img, .artist-card-img-ph, .album-card-img, .album-card-img-ph { width: 100%; height: auto; aspect-ratio: 1 / 1; border-right: none; border-bottom: 2px solid var(--ink); }
     .col-artists, .ep-desc { display: none; }
+    .experience-footer { flex-direction: column; align-items: stretch; }
+    .save-tape-btn { text-align: center; }
   }
 `;
 
@@ -306,6 +370,11 @@ function msToTime(ms) {
   if (!ms) return "—";
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function secToTime(sec) {
+  if (!sec) return "—";
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
 function extractId(input) {
@@ -332,6 +401,17 @@ function getTrackDisplay(t) {
   };
 }
 
+// Popularity bar component
+function PopBar({ value }) {
+  if (value == null) return null;
+  return (
+    <div className="pop-bar-wrap">
+      <div className="pop-bar"><div className="pop-bar-fill" style={{ width: `${value}%` }} /></div>
+      <span className="pop-label">Pop {value}</span>
+    </div>
+  );
+}
+
 export default function App() {
   const [dark, setDark] = useState(() => localStorage.getItem("bm_dark") === "1");
   const [tab, setTab] = useState("track");
@@ -341,12 +421,21 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [trackResult, setTrackResult] = useState(null);
+  const [artistResult, setArtistResult] = useState(null);
+  const [albumResult, setAlbumResult] = useState(null);
   const [showJson, setShowJson] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
-  const [selectedTrack, setSelectedTrack] = useState(null);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [progressMs, setProgressMs] = useState(0);
   const [history, setHistory] = useState(null);
+
+  // Savior Tape (experience) state
+  const [selectedTrackIds, setSelectedTrackIds] = useState(new Set());
+  const [savingTape, setSavingTape] = useState(false);
+  const [tapeResult, setTapeResult] = useState(null);
+
+  // Navigation history stack for back button
+  const [navStack, setNavStack] = useState([]);
 
   useEffect(() => {
     document.body.classList.toggle("dark", dark);
@@ -370,26 +459,73 @@ export default function App() {
     return () => clearInterval(id);
   }, [nowPlaying]);
 
-  const reset = () => {
-    setError(""); setLoading(true);
-    setTrackResult(null); setSearchResults(null);
-    setSelectedTrack(null); setShowJson(false); setNowPlaying(null);
+  const clearResults = () => {
+    setTrackResult(null);
+    setArtistResult(null);
+    setAlbumResult(null);
+    setSearchResults(null);
+    setNowPlaying(null);
+    setShowJson(false);
+    setTapeResult(null);
+    setSelectedTrackIds(new Set());
   };
 
-  const fetchTrack = async () => {
-    const id = extractId(query);
-    if (!id) return;
+  const reset = () => {
+    setError("");
+    setLoading(true);
+    clearResults();
+  };
+
+  // ─── FETCH TRACK ───────────────────────────────────────────────────────────
+  const fetchTrack = async (id, pushStack = false) => {
+    const resolvedId = id ?? extractId(query);
+    if (!resolvedId) return;
+    if (pushStack) setNavStack(s => [...s, { type: "search", results: searchResults, searchType }]);
     reset();
     try {
-      const res = await fetch(`${API}/api/spotify/track/${encodeURIComponent(id)}`);
+      const res = await fetch(`${API}/api/spotify/track/${encodeURIComponent(resolvedId)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status} — ${(await res.text().catch(() => "")).slice(0, 120)}`);
-      setTrackResult(await res.json());
+      const data = await res.json();
+      setTrackResult(data);
+      setTab("track");
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
 
+  // ─── FETCH ARTIST ──────────────────────────────────────────────────────────
+  const fetchArtist = async (id, pushStack = false) => {
+    if (!id) return;
+    if (pushStack) setNavStack(s => [...s, { type: "search", results: searchResults, searchType }]);
+    reset();
+    try {
+      const res = await fetch(`${API}/api/spotify/artist/${encodeURIComponent(id)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${(await res.text().catch(() => "")).slice(0, 120)}`);
+      const data = await res.json();
+      setArtistResult(data);
+      setTab("artist");
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  // ─── FETCH ALBUM ───────────────────────────────────────────────────────────
+  const fetchAlbum = async (id, pushStack = false) => {
+    if (!id) return;
+    if (pushStack) setNavStack(s => [...s, { type: "search", results: searchResults, searchType }]);
+    reset();
+    try {
+      const res = await fetch(`${API}/api/spotify/album/${encodeURIComponent(id)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${(await res.text().catch(() => "")).slice(0, 120)}`);
+      const data = await res.json();
+      setAlbumResult(data);
+      setTab("album");
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  // ─── FETCH SEARCH ──────────────────────────────────────────────────────────
   const fetchSearch = async () => {
     if (!query.trim()) return;
+    setNavStack([]);
     reset();
     try {
       const res = await fetch(`${API}/api/spotify/search?query=${encodeURIComponent(query.trim())}&type=${searchType}`);
@@ -402,6 +538,7 @@ export default function App() {
     finally { setLoading(false); }
   };
 
+  // ─── FETCH NOW PLAYING ─────────────────────────────────────────────────────
   const fetchNowPlaying = async () => {
     if (!token) return;
     reset();
@@ -416,13 +553,13 @@ export default function App() {
     finally { setLoading(false); }
   };
 
+  // ─── FETCH HISTORY ─────────────────────────────────────────────────────────
   const fetchHistory = async () => {
     if (!token) return;
     try {
       const res = await fetch(`${API}/api/spotify/history`);
       if (!res.ok) return;
       const data = await res.json();
-      // group tracks into albums, preserving play order, deduplicating consecutive same-album runs
       const albums = [];
       for (const track of data) {
         const albumName = track.album ?? "Unknown Album";
@@ -430,16 +567,19 @@ export default function App() {
         const last = albums[albums.length - 1];
         if (last && last.album === albumName) {
           last.tracks.push(track);
-          last.playedAt = track.playedAt; // keep earliest time in group
+          last.playedAt = track.playedAt;
         } else {
           albums.push({ album: albumName, art, artists: track.artists, tracks: [track], playedAt: track.playedAt });
         }
       }
+      // populate experience selector with all track IDs from history
+      const allIds = data.map(t => t.id).filter(Boolean);
+      setSelectedTrackIds(new Set(allIds));
       setHistory(albums);
     } catch { /* silent */ }
   };
 
-
+  // ─── POLL NOW PLAYING ─────────────────────────────────────────────────────
   const pollNowPlaying = async () => {
     if (!token) return;
     try {
@@ -471,31 +611,75 @@ export default function App() {
     const id = setInterval(fetchHistory, 20000);
     return () => clearInterval(id);
   }, [tab, token]);
-  const fetchTrackAndNavigate = async (spotifyTrack) => {
-    const id = spotifyTrack?.id;
-    if (!id) return;
-    setError(""); setLoading(true);
-    setTrackResult(null); setShowJson(false);
-    setTab("track");
+
+  // ─── SAVE SAVIOR TAPE (experience) ─────────────────────────────────────────
+  const saveTape = async () => {
+    if (!token || selectedTrackIds.size === 0) return;
+    setSavingTape(true);
+    setTapeResult(null);
     try {
-      const res = await fetch(`${API}/api/spotify/track/${encodeURIComponent(id)}`);
+      const ids = Array.from(selectedTrackIds);
+      const res = await fetch(`${API}/api/spotify/experience`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ids),
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status} — ${(await res.text().catch(() => "")).slice(0, 120)}`);
-      setTrackResult(await res.json());
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
+      const data = await res.json();
+      setTapeResult(data);
+    } catch (e) {
+      setTapeResult({ error: e.message });
+    } finally {
+      setSavingTape(false);
+    }
   };
 
+  // Toggle a single track in the experience selector
+  const toggleTrackId = (id) => {
+    setSelectedTrackIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // All unique tracks from history (flat)
+  const historyTracks = history
+    ? history.flatMap(g => g.tracks).filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
+    : [];
+
+  // Back navigation
+  const goBack = () => {
+    const stack = [...navStack];
+    const prev = stack.pop();
+    setNavStack(stack);
+    if (!prev) return;
+    clearResults();
+    setError("");
+    if (prev.type === "search") {
+      setSearchResults(prev.results);
+      setSearchType(prev.searchType ?? searchType);
+      setTab("search");
+    }
+  };
+
+  // ─── MAIN HANDLER ──────────────────────────────────────────────────────────
   const handleGo = () => {
     if (tab === "track") fetchTrack();
     else if (tab === "search") fetchSearch();
-    else fetchNowPlaying();
+    else if (tab === "now-playing") fetchNowPlaying();
   };
 
-  const hasResult = trackResult || searchResults || nowPlaying;
+  const hasResult = trackResult || artistResult || albumResult || searchResults || nowPlaying;
 
-  const placeholder = tab === "track" ? "Track ID or Spotify URL"
-    : tab === "search" ? "Search…"
-      : token ? "Fetches your current playback" : "Connect Spotify first";
+  const placeholder =
+    tab === "track" ? "Track ID or Spotify URL"
+      : tab === "search" ? "Search…"
+        : tab === "now-playing" ? (token ? "Fetches your current playback" : "Connect Spotify first")
+          : "";
+
+  const showInput = tab === "track" || tab === "search" || tab === "now-playing";
 
   return (
     <>
@@ -504,25 +688,40 @@ export default function App() {
       <nav>
         <div className="nav-logo"><span className="nav-dot" />BREAKMUSIC</div>
         <div className="nav-tabs">
-          {[["track", "Track"], ["search", "Search"], ["now-playing", "Now Playing"]].map(([id, label]) => (
-            <button key={id} className={`tab${tab === id ? " active" : ""}`} onClick={() => { setTab(id); setError(""); }}>
+          {[
+            ["track", "Track"],
+            ["search", "Search"],
+            ["now-playing", "Now Playing"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              className={`tab${tab === id ? " active" : ""}`}
+              onClick={() => { setTab(id); setError(""); clearResults(); setNavStack([]); }}
+            >
               {label}
             </button>
           ))}
+          {/* Dynamic tabs for detail views */}
+          {artistResult && <button className="tab active">Artist</button>}
+          {albumResult && <button className="tab active">Album</button>}
         </div>
         <div className="nav-auth">
           <button className="theme-btn" onClick={() => setDark(d => !d)} title="Toggle dark mode">
             {dark ? "☀" : "◑"}
           </button>
           {token
-            ? <><span className="auth-status">● connected</span><button className="auth-btn out" onClick={() => { setToken(""); sessionStorage.removeItem("sp_token"); }}>Sign out</button></>
+            ? <>
+              <span className="auth-status">● connected</span>
+              <button className="auth-btn out" onClick={() => { setToken(""); sessionStorage.removeItem("sp_token"); }}>Sign out</button>
+            </>
             : <button className="auth-btn" onClick={() => { window.location.href = `${API}/api/spotify/login`; }}>Connect Spotify</button>
           }
         </div>
       </nav>
 
       <main>
-        {!hasResult && !loading && !error && (
+        {/* Hero — only when nothing is showing */}
+        {!hasResult && !loading && !error && showInput && (
           <div className="hero">
             <div className="hero-eyebrow">Spotify API Explorer</div>
             <h1>Break<br /><em>Music.</em></h1>
@@ -535,44 +734,51 @@ export default function App() {
           </div>
         )}
 
-        <div className="input-area">
-          <div className="input-block">
-            <input
-              value={tab === "now-playing" ? "" : query}
-              onChange={e => tab !== "now-playing" && setQuery(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleGo()}
-              readOnly={tab === "now-playing"}
-              placeholder={placeholder}
-              style={tab === "now-playing" ? { cursor: "default", color: "var(--muted)" } : {}}
-            />
-            <button className="go-btn" onClick={handleGo} disabled={loading || (tab === "now-playing" && !token)}>
-              {loading ? "…" : tab === "now-playing" ? "Refresh" : "GO"}
-            </button>
-          </div>
-
-          {tab === "search" && (
-            <div className="type-row">
-              {["track", "album", "artist"].map(t => (
-                <button key={t} className={`type-btn${searchType === t ? " active" : ""}`} onClick={() => setSearchType(t)}>
-                  {t}
-                </button>
-              ))}
+        {/* Input bar — track / search / now-playing only */}
+        {showInput && (
+          <div className="input-area">
+            <div className="input-block">
+              <input
+                value={tab === "now-playing" ? "" : query}
+                onChange={e => tab !== "now-playing" && setQuery(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleGo()}
+                readOnly={tab === "now-playing"}
+                placeholder={placeholder}
+                style={tab === "now-playing" ? { cursor: "default", color: "var(--muted)" } : {}}
+              />
+              <button className="go-btn" onClick={handleGo} disabled={loading || (tab === "now-playing" && !token)}>
+                {loading ? "…" : tab === "now-playing" ? "Refresh" : "GO"}
+              </button>
             </div>
-          )}
-        </div>
+
+            {tab === "search" && (
+              <div className="type-row">
+                {["track", "album", "artist"].map(t => (
+                  <button key={t} className={`type-btn${searchType === t ? " active" : ""}`} onClick={() => setSearchType(t)}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {error && <div className="err">⚠ {error}</div>}
         {loading && <div className="loading"><div className="loader" /><span>Fetching…</span></div>}
 
-        {/* Track result */}
+        {/* ── TRACK RESULT ─────────────────────────────────────────────────── */}
         {tab === "track" && trackResult && !loading && (() => {
           const d = getTrackDisplay(trackResult);
           const genres = trackResult?.genres ?? [];
           const bpm = trackResult?.bpm ?? null;
           const key = trackResult?.key ?? null;
           const explicit = trackResult?.explicit ?? false;
+          const mood = trackResult?.mood ?? null;
           return (
             <>
+              {navStack.length > 0 && (
+                <button className="back-btn" onClick={goBack}>← Back to results</button>
+              )}
               <div className="card">
                 <div className="card-hero">
                   {d.art ? <img src={d.art} alt="art" className="card-art" /> : <div className="card-art-ph">♪</div>}
@@ -589,6 +795,7 @@ export default function App() {
                       {d.trackNumber && <span className="tag">#{d.trackNumber}</span>}
                       {bpm ? <span className="tag">{bpm} BPM</span> : <span className="tag" style={{ opacity: .45 }}>BPM —</span>}
                       {key ? <span className="tag">{key}</span> : <span className="tag" style={{ opacity: .45 }}>KEY —</span>}
+                      {mood && mood !== "unprovided" && <span className="tag hi">{mood}</span>}
                       {genres.length > 0
                         ? genres.slice(0, 2).map(g => <span key={g} className="tag">{g}</span>)
                         : <span className="tag" style={{ opacity: .45 }}>GENRE —</span>
@@ -607,7 +814,12 @@ export default function App() {
                         {d.albumTracks.map(t => {
                           const isActive = t.id === (trackResult.id ?? trackResult.Id);
                           return (
-                            <tr key={t.id} className={isActive ? "active-row" : ""}>
+                            <tr
+                              key={t.id}
+                              className={`${isActive ? "active-row" : ""} clickable`}
+                              onClick={() => !isActive && fetchTrack(t.id, false)}
+                              title={isActive ? undefined : `View "${t.name}"`}
+                            >
                               <td className="td-num">{isActive ? <span className="active-dot" /> : (t.trackNumber ?? t.track_number)}</td>
                               <td><strong style={{ fontWeight: 600 }}>{t.name}</strong>{t.explicit && <span className="exp-tag">E</span>}</td>
                               <td className="col-artists" style={{ color: "var(--muted)", fontSize: ".74rem" }}>{t.artists?.map(a => a.name).join(", ")}</td>
@@ -628,7 +840,84 @@ export default function App() {
           );
         })()}
 
-        {/* Search results */}
+        {/* ── ARTIST DETAIL ─────────────────────────────────────────────────── */}
+        {tab === "artist" && artistResult && !loading && (() => {
+          const img = artistResult?.coverUrl ?? artistResult?.images?.[0]?.url;
+          const genres = artistResult?.genres ?? [];
+          return (
+            <>
+              {navStack.length > 0 && (
+                <button className="back-btn" onClick={goBack}>← Back to results</button>
+              )}
+              <div className="artist-card">
+                <div className="artist-card-hero">
+                  {img
+                    ? <img src={img} alt={artistResult.name} className="artist-card-img" />
+                    : <div className="artist-card-img-ph">👤</div>
+                  }
+                  <div className="artist-card-meta">
+                    <div className="card-type">Artist</div>
+                    <div className="card-title">{artistResult.name}</div>
+                    <PopBar value={artistResult.popularity} />
+                    <div className="tags" style={{ marginTop: 8 }}>
+                      {genres.length > 0
+                        ? genres.map(g => <span key={g} className="tag">{g}</span>)
+                        : <span className="tag" style={{ opacity: .45 }}>NO GENRES</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="json-section">
+                <button className="json-toggle" onClick={() => setShowJson(v => !v)}>{showJson ? "▲ Hide" : "▼ Show"} raw JSON</button>
+                {showJson && <pre>{JSON.stringify(artistResult, null, 2)}</pre>}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* ── ALBUM DETAIL ──────────────────────────────────────────────────── */}
+        {tab === "album" && albumResult && !loading && (() => {
+          const img = albumResult?.coverUrl ?? albumResult?.images?.[0]?.url;
+          const genres = albumResult?.genres ?? [];
+          const artists = albumResult?.artists?.join(", ") ?? "—";
+          return (
+            <>
+              {navStack.length > 0 && (
+                <button className="back-btn" onClick={goBack}>← Back to results</button>
+              )}
+              <div className="album-card">
+                <div className="album-card-hero">
+                  {img
+                    ? <img src={img} alt={albumResult.title} className="album-card-img" />
+                    : <div className="album-card-img-ph">💿</div>
+                  }
+                  <div className="album-card-meta">
+                    <div className="card-type">Album</div>
+                    <div className="card-title">{albumResult.title}</div>
+                    <div className="card-artists">{artists}</div>
+                    {albumResult.releaseDate && (
+                      <div className="card-album">📅 {albumResult.releaseDate}</div>
+                    )}
+                    <PopBar value={albumResult.popularity} />
+                    <div className="tags" style={{ marginTop: 8 }}>
+                      {genres.length > 0
+                        ? genres.map(g => <span key={g} className="tag">{g}</span>)
+                        : <span className="tag" style={{ opacity: .45 }}>NO GENRES</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="json-section">
+                <button className="json-toggle" onClick={() => setShowJson(v => !v)}>{showJson ? "▲ Hide" : "▼ Show"} raw JSON</button>
+                {showJson && <pre>{JSON.stringify(albumResult, null, 2)}</pre>}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* ── SEARCH RESULTS ────────────────────────────────────────────────── */}
         {tab === "search" && searchResults && !loading && (
           <>
             <div className="results-header">
@@ -636,11 +925,12 @@ export default function App() {
               <span className="results-count">{searchResults.items.length} {searchResults.type}s</span>
             </div>
             <div className="results-grid">
+              {/* TRACK results */}
               {searchResults.type === "track" && searchResults.items.map((t, i) => {
                 const d = getTrackDisplay(t);
                 const thumb = d.art ?? t?.album?.images?.[2]?.url;
                 return (
-                  <div key={t.id ?? i} className="result-item" onClick={() => fetchTrackAndNavigate(t)}>
+                  <div key={t.id ?? i} className="result-item" onClick={() => fetchTrack(t.id, true)}>
                     {thumb ? <img src={thumb} alt="" className="result-thumb" /> : <div className="result-thumb-ph">♪</div>}
                     <div className="result-info">
                       <div className="result-name">{d.name}</div>
@@ -651,10 +941,11 @@ export default function App() {
                 );
               })}
 
+              {/* ARTIST results — now clickable for detail */}
               {searchResults.type === "artist" && searchResults.items.map((a, i) => {
                 const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
                 return (
-                  <div key={a.id ?? i} className="artist-item">
+                  <div key={a.id ?? i} className="artist-item" onClick={() => fetchArtist(a.id, true)}>
                     {img ? <img src={img} alt="" className="artist-avatar" /> : <div className="artist-avatar-ph">👤</div>}
                     <div className="artist-info">
                       <div className="artist-name-text">{a.name}</div>
@@ -663,18 +954,17 @@ export default function App() {
                         {a.genres?.length ? ` · ${a.genres.slice(0, 2).join(", ")}` : ""}
                       </div>
                     </div>
-                    {a.externalUrls?.spotify && (
-                      <a href={a.externalUrls.spotify} target="_blank" rel="noopener noreferrer" className="sp-link" style={{ marginTop: 0 }}>↗</a>
-                    )}
+                    <span style={{ fontFamily: "var(--mono)", fontSize: ".62rem", color: "var(--muted)" }}>View →</span>
                   </div>
                 );
               })}
 
+              {/* ALBUM results — now clickable for detail */}
               {searchResults.type === "album" && searchResults.items.map((a, i) => {
                 const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
                 const artistNames = a?.artists?.map(x => x.name).join(", ");
                 return (
-                  <div key={a.id ?? i} className="album-item">
+                  <div key={a.id ?? i} className="album-item" onClick={() => fetchAlbum(a.id, true)}>
                     {img ? <img src={img} alt="" className="album-thumb" /> : <div className="album-thumb-ph">💿</div>}
                     <div className="album-info">
                       <div className="album-name-text">{a.name}</div>
@@ -682,9 +972,8 @@ export default function App() {
                     </div>
                     <div className="album-meta">
                       {a.totalTracks} tracks
-                      {a.externalUrls?.spotify && (
-                        <><br /><a href={a.externalUrls.spotify} target="_blank" rel="noopener noreferrer" className="sp-link" style={{ marginTop: 6, padding: "4px 8px" }}>↗</a></>
-                      )}
+                      <br />
+                      <span style={{ fontFamily: "var(--mono)", fontSize: ".6rem", color: "var(--muted)" }}>View →</span>
                     </div>
                   </div>
                 );
@@ -693,7 +982,7 @@ export default function App() {
           </>
         )}
 
-        {/* Now playing */}
+        {/* ── NOW PLAYING ───────────────────────────────────────────────────── */}
         {tab === "now-playing" && nowPlaying && !loading && (() => {
           const isPlaying = nowPlaying?.isPlaying !== false;
           const art = nowPlaying?.album?.images?.[0]?.url ?? nowPlaying?.coverUrl;
@@ -709,6 +998,7 @@ export default function App() {
           const genres = nowPlaying?.genres ?? [];
           const bpm = nowPlaying?.bpm ?? null;
           const key = nowPlaying?.key ?? null;
+          const mood = nowPlaying?.mood ?? null;
           const releaseDate = nowPlaying?.releaseDate ?? null;
           return (
             <>
@@ -730,6 +1020,7 @@ export default function App() {
                       {duration > 0 && <span className="tag">{msToTime(duration)}</span>}
                       {bpm ? <span className="tag">{bpm} BPM</span> : <span className="tag" style={{ opacity: .45 }}>BPM —</span>}
                       {key ? <span className="tag">{key}</span> : <span className="tag" style={{ opacity: .45 }}>KEY —</span>}
+                      {mood && mood !== "unprovided" && <span className="tag hi">{mood}</span>}
                       {genres.length > 0
                         ? genres.slice(0, 2).map(g => <span key={g} className="tag">{g}</span>)
                         : <span className="tag" style={{ opacity: .45 }}>GENRE —</span>
@@ -747,75 +1038,127 @@ export default function App() {
                 <button className="json-toggle" onClick={() => setShowJson(v => !v)}>{showJson ? "▲ Hide" : "▼ Show"} raw JSON</button>
                 {showJson && <pre>{JSON.stringify(nowPlaying, null, 2)}</pre>}
               </div>
-              {history && history.length > 0 && (
-                <div className="history">
-                  <div className="history-header">
-                    <h3>Recent</h3>
-                    <span>{history.length} sessions</span>
-                  </div>
-                  <div className="history-list">
-                    {history.map((entry, i) => (
-                      <div key={i} className="history-album" onClick={() => fetchTrackAndNavigate({ id: entry.tracks[0]?.id })}>
-                        {entry.art
-                          ? <img src={entry.art} alt="" className="history-art" />
-                          : <div className="history-art-ph">💿</div>
-                        }
-                        <div className="history-info">
-                          <div className="history-album-name">{entry.album}</div>
-                          <div className="history-album-sub">{entry.artists?.join(", ")}</div>
-                        </div>
-                        <div className="history-count">
-                          {entry.tracks.length} {entry.tracks.length === 1 ? "track" : "tracks"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           );
         })()}
 
-        {tab === "now-playing" && !nowPlaying && !loading && history && history.length > 0 && (
-          <div className="history">
-            <div className="history-header">
-              <h3>Recent</h3>
-              <span>{history.length} sessions</span>
+        {/* ── HISTORY + SAVIOR TAPE ─────────────────────────────────────────── */}
+        {tab === "now-playing" && !loading && history && history.length > 0 && (
+          <>
+            <div className="history">
+              <div className="history-header">
+                <h3>Recent</h3>
+                <span>{history.length} sessions</span>
+              </div>
+              <div className="history-list">
+                {history.map((entry, i) => (
+                  <div
+                    key={i}
+                    className="history-album"
+                    onClick={() => entry.tracks[0]?.id && fetchTrack(entry.tracks[0].id, false)}
+                  >
+                    {entry.art
+                      ? <img src={entry.art} alt="" className="history-art" />
+                      : <div className="history-art-ph">💿</div>
+                    }
+                    <div className="history-info">
+                      <div className="history-album-name">{entry.album}</div>
+                      <div className="history-album-sub">{entry.artists?.join(", ")}</div>
+                    </div>
+                    <div className="history-count">
+                      {entry.tracks.length} {entry.tracks.length === 1 ? "track" : "tracks"}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="history-list">
-              {history.map((entry, i) => (
-                <div key={i} className="history-album" onClick={() => fetchTrackAndNavigate({ id: entry.tracks[0]?.id })}>
-                  {entry.art
-                    ? <img src={entry.art} alt="" className="history-art" />
-                    : <div className="history-art-ph">💿</div>
-                  }
-                  <div className="history-info">
-                    <div className="history-album-name">{entry.album}</div>
-                    <div className="history-album-sub">{entry.artists?.join(", ")}</div>
-                  </div>
-                  <div className="history-count">
-                    {entry.tracks.length} {entry.tracks.length === 1 ? "track" : "tracks"}
-                  </div>
+
+            {/* ── SAVIOR TAPE (experience) ─── */}
+            {historyTracks.length > 0 && (
+              <div className="experience-section">
+                <div className="experience-header">
+                  <span className="experience-title">🎞 Savior Tape — curate a playlist</span>
+                  <span className="experience-count">{selectedTrackIds.size} / {historyTracks.length} selected</span>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="experience-tracks">
+                  {historyTracks.map(t => {
+                    const checked = selectedTrackIds.has(t.id);
+                    return (
+                      <div key={t.id} className="exp-track-row" onClick={() => toggleTrackId(t.id)}>
+                        <div className={`exp-track-check${checked ? " checked" : ""}`} />
+                        {t.coverUrl
+                          ? <img src={t.coverUrl} alt="" className="exp-track-art" />
+                          : <div className="exp-track-art-ph">♪</div>
+                        }
+                        <div className="exp-track-info">
+                          <div className="exp-track-name">{t.title}</div>
+                          <div className="exp-track-sub">{t.artists?.join(", ")} · {t.album}</div>
+                        </div>
+                        <div className="exp-track-time">{secToTime(t.duration)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="experience-footer">
+                  <button
+                    className="exp-select-all"
+                    onClick={() => {
+                      if (selectedTrackIds.size === historyTracks.length) {
+                        setSelectedTrackIds(new Set());
+                      } else {
+                        setSelectedTrackIds(new Set(historyTracks.map(t => t.id)));
+                      }
+                    }}
+                  >
+                    {selectedTrackIds.size === historyTracks.length ? "Deselect all" : "Select all"}
+                  </button>
+                  <button
+                    className="save-tape-btn"
+                    onClick={saveTape}
+                    disabled={savingTape || selectedTrackIds.size === 0 || !token}
+                  >
+                    {savingTape ? "Saving…" : "Save to Spotify ↗"}
+                  </button>
+                </div>
+                {tapeResult && !tapeResult.error && (
+                  <div style={{ padding: "0 18px 14px" }}>
+                    <div className="tape-success">
+                      ✓ {tapeResult.message ?? tapeResult.Message}
+                      {tapeResult.playlistId ?? tapeResult.PlaylistId
+                        ? <> · <a href={`https://open.spotify.com/playlist/${tapeResult.playlistId ?? tapeResult.PlaylistId}`} target="_blank" rel="noopener noreferrer">Open playlist ↗</a></>
+                        : null
+                      }
+                    </div>
+                  </div>
+                )}
+                {tapeResult?.error && (
+                  <div style={{ padding: "0 18px 14px" }}>
+                    <div className="err">⚠ {tapeResult.error}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
-        {!hasResult && !loading && !error && (
+        {/* ── EMPTY STATE ───────────────────────────────────────────────────── */}
+        {!hasResult && !loading && !error && showInput && (
           <div className="empty">
             <div className="empty-label">Backend endpoints</div>
             <div className="empty-endpoints">
               {[
-                ["/api/spotify/login", "Start OAuth flow"],
-                ["/api/spotify/callback?code=", "OAuth callback"],
-                ["/api/spotify/track/{id}", "Fetch track by ID"],
-                ["/api/spotify/album/{id}", "Fetch album by ID"],
-                ["/api/spotify/search?query=&type=", "Search tracks / albums / artists"],
-                ["/api/spotify/current", "Currently playing (OAuth)"],
-              ].map(([path, desc]) => (
+                ["GET", "/api/spotify/login", "Start OAuth flow"],
+                ["GET", "/api/spotify/callback?code=", "OAuth callback"],
+                ["GET", "/api/spotify/track/{id}", "Fetch track by ID"],
+                ["GET", "/api/spotify/artist/{id}", "Fetch artist by ID"],
+                ["GET", "/api/spotify/album/{id}", "Fetch album by ID"],
+                ["GET", "/api/spotify/search?query=&type=", "Search tracks / albums / artists"],
+                ["GET", "/api/spotify/current", "Currently playing (OAuth)"],
+                ["GET", "/api/spotify/history", "Recently played (OAuth)"],
+                ["POST", "/api/spotify/experience", "Save Savior Tape playlist (OAuth)"],
+              ].map(([method, path, desc]) => (
                 <div className="endpoint" key={path}>
-                  <span className="ep-method">GET</span>
+                  <span className="ep-method">{method}</span>
                   <span className="ep-path">{path}</span>
                   <span className="ep-desc">{desc}</span>
                 </div>
