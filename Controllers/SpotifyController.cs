@@ -200,11 +200,13 @@ namespace SpotifyWebApp.Controllers
             int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
             nextVol++;
 
+            Console.WriteLine($"Creating playlist for user: {user.Id}");
             var newPlaylist = await spotify.Playlists.Create(
                 user.Id,
                 new PlaylistCreateRequest($"Savior Tape Vol. {nextVol}")
                 {
                     Public = false,
+                    Collaborative = false,
                     Description = "Curated by Your moment",
                 }
             );
@@ -229,12 +231,14 @@ namespace SpotifyWebApp.Controllers
             {
                 Scope = new[]
                 {
-                    Scopes.UserReadPrivate,
+                    Scopes.UserReadPrivate, // Для отримання User.Id
                     Scopes.UserReadEmail,
-                    Scopes.UserReadCurrentlyPlaying,
+                    Scopes.PlaylistReadPrivate, // Щоб бачити список плейлістів (рядок 198)
+                    Scopes.PlaylistReadCollaborative,
+                    Scopes.PlaylistModifyPublic, // Для створення
+                    Scopes.PlaylistModifyPrivate, // Для створення
                     Scopes.UserReadRecentlyPlayed,
-                    Scopes.PlaylistModifyPublic,
-                    Scopes.PlaylistModifyPrivate,
+                    Scopes.UserReadCurrentlyPlaying,
                 },
             };
 
