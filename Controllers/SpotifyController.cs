@@ -196,6 +196,7 @@ namespace SpotifyWebApp.Controllers
             var user = await spotify.UserProfile.Current();
 
             var playlists = await spotify.Playlists.CurrentUsers();
+            Console.WriteLine($"User has {playlists.Items?.Count} playlists");
 
             int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
             nextVol++;
