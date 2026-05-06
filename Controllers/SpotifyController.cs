@@ -195,75 +195,134 @@ namespace SpotifyWebApp.Controllers
         {
             var token = _tokenService.GetToken();
             if (string.IsNullOrEmpty(token))
-                return Unauthorized();
+                return Unauthorized("No token. Please log in via /api/spotify/login.");
 
-            // Raw HTTP call to Spotify directly
+            if (trackIds == null || trackIds.Count == 0)
+                return BadRequest("No track IDs provided.");
+
             var httpClient = _httpClientFactory.CreateClient();
-            httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                token
+            );
 
-            var body = JsonSerializer.Serialize(
+            // 1 — створюємо плейлист через новий endpoint POST /me/playlists
+            var createPayload = JsonSerializer.Serialize(
                 new
                 {
                     name = "Savior Tape Test",
                     @public = false,
-                    description = "test",
+                    collaborative = false,
+                    description = "Curated by BreakMusic",
                 }
             );
 
-            var response = await httpClient.PostAsync(
+            var createResponse = await httpClient.PostAsync(
                 "https://api.spotify.com/v1/me/playlists",
-                new StringContent(body, System.Text.Encoding.UTF8, "application/json")
+                new StringContent(createPayload, Encoding.UTF8, "application/json")
             );
 
-            var responseBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Status: {response.StatusCode}");
-            Console.WriteLine($"Body: {responseBody}");
+            var createJson = await createResponse.Content.ReadAsStringAsync();
+            Console.WriteLine($"[CREATE] {createResponse.StatusCode}: {createJson}");
 
-            return Ok(responseBody);
+            if (!createResponse.IsSuccessStatusCode)
+                return StatusCode((int)createResponse.StatusCode, createJson);
+
+            // 2 — парсимо playlist ID
+            string? playlistId;
+            using (var doc = JsonDocument.Parse(createJson))
+            {
+                doc.RootElement.TryGetProperty("id", out var idProp);
+                playlistId = idProp.GetString();
+            }
+
+            Console.WriteLine($"[CREATE] Playlist ID: {playlistId}");
+
+            if (string.IsNullOrEmpty(playlistId))
+                return StatusCode(500, "Could not parse playlist ID from Spotify response.");
+
+            // 3 — будуємо URI список
+            var uris = trackIds
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Select(id => $"spotify:track:{id}")
+                .ToList();
+
+            Console.WriteLine($"[TRACKS] Adding {uris.Count} tracks...");
+
+            // 4 — додаємо треки батчами по 100 через /items (не /tracks — deprecated)
+            for (int i = 0; i < uris.Count; i += 100)
+            {
+                var batch = uris.Skip(i).Take(100).ToList();
+
+                var addPayload = JsonSerializer.Serialize(new { uris = batch });
+
+                var addResponse = await httpClient.PostAsync(
+                    $"https://api.spotify.com/v1/playlists/{playlistId}/items",
+                    new StringContent(addPayload, Encoding.UTF8, "application/json")
+                );
+
+                var addJson = await addResponse.Content.ReadAsStringAsync();
+                Console.WriteLine(
+                    $"[TRACKS] Batch {i / 100 + 1}: {addResponse.StatusCode}: {addJson}"
+                );
+
+                if (!addResponse.IsSuccessStatusCode)
+                    return StatusCode((int)addResponse.StatusCode, addJson);
+            }
+
+            return Ok(
+                new
+                {
+                    playlistId,
+                    message = "Playlist saved successfully!",
+                    trackCount = uris.Count,
+                    spotifyUrl = $"https://open.spotify.com/playlist/{playlistId}",
+                }
+            );
         }
 
         /*
-              // TODO Create "experience" endpoint that shows what albums you played back to back, what tracks from there, and what artists, and maybe even what genres
-                [HttpPost("experience")]
-                public async Task<IActionResult> SaveMoment([FromBody] List<string> trackIds)
-                {
-                    var token = _tokenService.GetToken();
-                    Console.WriteLine($"SaveMoment token: '{token?.Substring(0, 20) ?? "NULL"}'");
-                    Console.WriteLine($"Token expired: {_tokenService.IsExpired()}");
-                    Console.WriteLine($"Track IDs received: {trackIds?.Count ?? 0}");
-        
-                    if (string.IsNullOrEmpty(token))
-                        return Unauthorized();
-                    var spotify = new SpotifyClient(token);
-                    var user = await spotify.UserProfile.Current();
-        
-                    var playlists = await spotify.Playlists.CurrentUsers();
-                    Console.WriteLine($"User has {playlists.Items?.Count} playlists");
-        
-                    int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
-                    nextVol++;
-        
-                    Console.WriteLine($"Creating playlist for user: {user.Id}");
-                    var newPlaylist = await spotify.Playlists.Create(
-                        "me",
-                        new PlaylistCreateRequest($"Savior Tape Vol. {nextVol}")
+                      // TODO Create "experience" endpoint that shows what albums you played back to back, what tracks from there, and what artists, and maybe even what genres
+                        [HttpPost("experience")]
+                        public async Task<IActionResult> SaveMoment([FromBody] List<string> trackIds)
                         {
-                            Public = false,
-                            Collaborative = false,
-                            Description = "Curated by Your moment",
+                            var token = _tokenService.GetToken();
+                            Console.WriteLine($"SaveMoment token: '{token?.Substring(0, 20) ?? "NULL"}'");
+                            Console.WriteLine($"Token expired: {_tokenService.IsExpired()}");
+                            Console.WriteLine($"Track IDs received: {trackIds?.Count ?? 0}");
+                
+                            if (string.IsNullOrEmpty(token))
+                                return Unauthorized();
+                            var spotify = new SpotifyClient(token);
+                            var user = await spotify.UserProfile.Current();
+                
+                            var playlists = await spotify.Playlists.CurrentUsers();
+                            Console.WriteLine($"User has {playlists.Items?.Count} playlists");
+                
+                            int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
+                            nextVol++;
+                
+                            Console.WriteLine($"Creating playlist for user: {user.Id}");
+                            var newPlaylist = await spotify.Playlists.Create(
+                                "me",
+                                new PlaylistCreateRequest($"Savior Tape Vol. {nextVol}")
+                                {
+                                    Public = false,
+                                    Collaborative = false,
+                                    Description = "Curated by Your moment",
+                                }
+                            );
+                
+                            var trackUris = trackIds.Select(id => $"spotify:track:{id}").ToList();
+                            await spotify.Playlists.AddItems(
+                                newPlaylist.Id,
+                                new PlaylistAddItemsRequest(trackUris)
+                            );
+                
+                            return Ok(new { Message = $"Saved to Vol. {nextVol}!", PlaylistId = newPlaylist.Id });
                         }
-                    );
-        
-                    var trackUris = trackIds.Select(id => $"spotify:track:{id}").ToList();
-                    await spotify.Playlists.AddItems(
-                        newPlaylist.Id,
-                        new PlaylistAddItemsRequest(trackUris)
-                    );
-        
-                    return Ok(new { Message = $"Saved to Vol. {nextVol}!", PlaylistId = newPlaylist.Id });
-                }
-        */
+                */
+
         [HttpGet("login")]
         public IActionResult Login()
         {
