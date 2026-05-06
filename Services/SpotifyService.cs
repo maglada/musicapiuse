@@ -7,55 +7,58 @@ namespace SpotifyWebApp.Services
 {
     public class SpotifyService : ISpotifyService
     {
-        private readonly SpotifyClient _spotify;
+        private readonly IConfiguration _config;
         private readonly SpotifyTokenService _tokenService;
+        private SpotifyClient? _spotify;
+
+        public SpotifyService(IConfiguration config, SpotifyTokenService tokenService)
+        {
+            _config = config;
+            _tokenService = tokenService;
+            // No network calls here anymore
+        }
+
+        private async Task<SpotifyClient> GetClientCredentialsClientAsync()
+        {
+            if (_spotify != null)
+                return _spotify;
+
+            var credentials = new ClientCredentialsRequest(
+                _config["Spotify:ClientId"],
+                _config["Spotify:ClientSecret"]
+            );
+            var token = await new OAuthClient().RequestToken(credentials);
+            _spotify = new SpotifyClient(token.AccessToken);
+            return _spotify;
+        }
 
         private SpotifyClient GetClient(string? userToken = null)
         {
             if (!string.IsNullOrEmpty(userToken))
                 return new SpotifyClient(userToken);
+            if (_spotify == null)
+                throw new InvalidOperationException(
+                    "Client not initialized yet, call GetClientCredentialsClientAsync first"
+                );
             return _spotify;
-        }
-
-        public SpotifyService(IConfiguration config, SpotifyTokenService tokenService)
-        {
-            _tokenService = tokenService;
-            var clientId = config["Spotify:ClientId"];
-            var clientSecret = config["Spotify:ClientSecret"];
-
-            var credentials = new ClientCredentialsRequest(clientId, clientSecret);
-            var oauth = new OAuthClient();
-            var token = oauth.RequestToken(credentials).Result;
-
-            _spotify = new SpotifyClient(token.AccessToken);
         }
 
         public async Task<SearchResponse> GetSearchResultsAsync(string query, string type = "track")
         {
-            switch (type.ToLower())
+            var client = await GetClientCredentialsClientAsync();
+            var searchType = type.ToLower() switch
             {
-                case "track":
-                    var trackSearchRequest = new SearchRequest(SearchRequest.Types.Track, query);
-                    return await _spotify.Search.Item(trackSearchRequest);
-                case "album":
-                    var albumSearchRequest = new SearchRequest(SearchRequest.Types.Album, query);
-                    return await _spotify.Search.Item(albumSearchRequest);
-                case "artist":
-                    var artistSearchRequest = new SearchRequest(SearchRequest.Types.Artist, query);
-                    return await _spotify.Search.Item(artistSearchRequest);
-                default:
-                    throw new ArgumentException(
-                        "Invalid search type. Must be 'track', 'album', or 'artist'."
-                    );
-            }
+                "track" => SearchRequest.Types.Track,
+                "album" => SearchRequest.Types.Album,
+                "artist" => SearchRequest.Types.Artist,
+                _ => throw new ArgumentException("Invalid search type."),
+            };
+            return await client.Search.Item(new SearchRequest(searchType, query));
         }
 
         public async Task<FullTrack> GetTrackAsync(string trackId)
         {
-            var token = _tokenService.GetToken();
-            Console.WriteLine($"SERVICE tokenService hash: {_tokenService.GetHashCode()}");
-            Console.WriteLine($"TOKEN: {token?.Substring(0, 20) ?? "NULL"}");
-            return await GetClient(token).Tracks.Get(trackId);
+            return await GetClient(_tokenService.GetToken()).Tracks.Get(trackId);
         }
 
         public async Task<FullAlbum> GetAlbumAsync(string albumId)

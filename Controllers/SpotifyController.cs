@@ -1,4 +1,7 @@
 using System;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +23,7 @@ namespace SpotifyWebApp.Controllers
         private readonly IMusicBrainzService _musicBrainz;
         private readonly IAudioDbService _audioDb;
         private readonly IMusicMetadataService _metadataService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public SpotifyController(
             ISpotifyService spotifyService,
@@ -27,7 +31,8 @@ namespace SpotifyWebApp.Controllers
             SpotifyTokenService tokenService,
             IMusicBrainzService musicBrainz,
             IAudioDbService audioDb,
-            IMusicMetadataService metadataService
+            IMusicMetadataService metadataService,
+            IHttpClientFactory httpClientFactory
         )
         {
             _spotifyService = spotifyService;
@@ -36,6 +41,7 @@ namespace SpotifyWebApp.Controllers
             _musicBrainz = musicBrainz;
             _audioDb = audioDb;
             _metadataService = metadataService;
+            _httpClientFactory = httpClientFactory;
         }
 
         private async Task<TrackDto> GetTrackEnriched(string id)
@@ -184,7 +190,6 @@ namespace SpotifyWebApp.Controllers
             }
         }
 
-        // TODO Create "experience" endpoint that shows what albums you played back to back, what tracks from there, and what artists, and maybe even what genres
         [HttpPost("experience")]
         public async Task<IActionResult> SaveMoment([FromBody] List<string> trackIds)
         {
@@ -192,35 +197,73 @@ namespace SpotifyWebApp.Controllers
             if (string.IsNullOrEmpty(token))
                 return Unauthorized();
 
-            var spotify = new SpotifyClient(token);
-            var user = await spotify.UserProfile.Current();
+            // Raw HTTP call to Spotify directly
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            var playlists = await spotify.Playlists.CurrentUsers();
-            Console.WriteLine($"User has {playlists.Items?.Count} playlists");
-
-            int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
-            nextVol++;
-
-            Console.WriteLine($"Creating playlist for user: {user.Id}");
-            var newPlaylist = await spotify.Playlists.Create(
-                user.Id,
-                new PlaylistCreateRequest($"Savior Tape Vol. {nextVol}")
+            var body = JsonSerializer.Serialize(
+                new
                 {
-                    Public = false,
-                    Collaborative = false,
-                    Description = "Curated by Your moment",
+                    name = "Savior Tape Test",
+                    @public = false,
+                    description = "test",
                 }
             );
 
-            var trackUris = trackIds.Select(id => $"spotify:track:{id}").ToList();
-            await spotify.Playlists.AddItems(
-                newPlaylist.Id,
-                new PlaylistAddItemsRequest(trackUris)
+            var response = await httpClient.PostAsync(
+                "https://api.spotify.com/v1/me/playlists",
+                new StringContent(body, System.Text.Encoding.UTF8, "application/json")
             );
 
-            return Ok(new { Message = $"Saved to Vol. {nextVol}!", PlaylistId = newPlaylist.Id });
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Status: {response.StatusCode}");
+            Console.WriteLine($"Body: {responseBody}");
+
+            return Ok(responseBody);
         }
 
+        /*
+              // TODO Create "experience" endpoint that shows what albums you played back to back, what tracks from there, and what artists, and maybe even what genres
+                [HttpPost("experience")]
+                public async Task<IActionResult> SaveMoment([FromBody] List<string> trackIds)
+                {
+                    var token = _tokenService.GetToken();
+                    Console.WriteLine($"SaveMoment token: '{token?.Substring(0, 20) ?? "NULL"}'");
+                    Console.WriteLine($"Token expired: {_tokenService.IsExpired()}");
+                    Console.WriteLine($"Track IDs received: {trackIds?.Count ?? 0}");
+        
+                    if (string.IsNullOrEmpty(token))
+                        return Unauthorized();
+                    var spotify = new SpotifyClient(token);
+                    var user = await spotify.UserProfile.Current();
+        
+                    var playlists = await spotify.Playlists.CurrentUsers();
+                    Console.WriteLine($"User has {playlists.Items?.Count} playlists");
+        
+                    int nextVol = playlists.Items?.Count(p => p.Name.Contains("Savior Tape")) ?? 0;
+                    nextVol++;
+        
+                    Console.WriteLine($"Creating playlist for user: {user.Id}");
+                    var newPlaylist = await spotify.Playlists.Create(
+                        "me",
+                        new PlaylistCreateRequest($"Savior Tape Vol. {nextVol}")
+                        {
+                            Public = false,
+                            Collaborative = false,
+                            Description = "Curated by Your moment",
+                        }
+                    );
+        
+                    var trackUris = trackIds.Select(id => $"spotify:track:{id}").ToList();
+                    await spotify.Playlists.AddItems(
+                        newPlaylist.Id,
+                        new PlaylistAddItemsRequest(trackUris)
+                    );
+        
+                    return Ok(new { Message = $"Saved to Vol. {nextVol}!", PlaylistId = newPlaylist.Id });
+                }
+        */
         [HttpGet("login")]
         public IActionResult Login()
         {
