@@ -300,10 +300,10 @@ const css = `
   .experience-title { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .experience-count { font-family: var(--mono); font-size: .6rem; color: var(--muted); }
   .experience-tracks { display: flex; flex-direction: column; }
-  .exp-track-row { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--border); transition: background .1s; }
+  .exp-track-row { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
   .exp-track-row:last-child { border-bottom: none; }
   .exp-track-row:hover { background: var(--paper2); }
-  .exp-track-check { width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 2px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .12s; background: var(--card-bg); }
+  .exp-track-check { width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .12s; background: var(--card-bg); }
   .exp-track-check.checked { background: var(--ink); border-color: var(--ink); }
   .exp-track-check.checked::after { content: '✓'; font-size: .55rem; color: var(--accent); font-weight: 700; }
   .exp-track-art { width: 36px; height: 36px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
@@ -311,7 +311,7 @@ const css = `
   .exp-track-info { flex: 1; min-width: 0; }
   .exp-track-name { font-size: .85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .exp-track-sub { font-family: var(--mono); font-size: .6rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .exp-track-time { font-family: var(--mono); font-size: .6rem; color: var(--muted); flex-shrink: 0; }
+  .exp-track-time { font-family: var(--mono); font-size: .6rem; color: var(--muted); flex-shrink: 0; text-align: right; white-space: nowrap; }
   .experience-footer { padding: 12px 18px; background: var(--paper2); border-top: 2px solid var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .exp-select-all { font-family: var(--mono); font-size: .6rem; letter-spacing: .05em; text-transform: uppercase; background: none; border: 1.5px solid var(--border); border-radius: 2px; padding: 5px 12px; cursor: pointer; color: var(--muted); transition: all .12s; }
   .exp-select-all:hover { border-color: var(--ink); color: var(--text); }
@@ -401,7 +401,6 @@ function getTrackDisplay(t) {
   };
 }
 
-// Popularity bar component
 function PopBar({ value }) {
   if (value == null) return null;
   return (
@@ -429,7 +428,7 @@ export default function App() {
   const [progressMs, setProgressMs] = useState(0);
   const [history, setHistory] = useState(null);
 
-  // Savior Tape (experience) state
+  // Savior Tape: selectedTrackIds now holds album names (not track IDs)
   const [selectedTrackIds, setSelectedTrackIds] = useState(new Set());
   const [savingTape, setSavingTape] = useState(false);
   const [tapeResult, setTapeResult] = useState(null);
@@ -560,21 +559,41 @@ export default function App() {
       const res = await fetch(`${API}/api/spotify/history`);
       if (!res.ok) return;
       const data = await res.json();
-      const albums = [];
+
+      // Deduplicate by album name globally — merge all plays of the same album
+      // regardless of order in the history list
+      const albumMap = new Map();
       for (const track of data) {
         const albumName = track.album ?? "Unknown Album";
-        const art = track.coverUrl ?? null;
-        const last = albums[albums.length - 1];
-        if (last && last.album === albumName) {
-          last.tracks.push(track);
-          last.playedAt = track.playedAt;
-        } else {
-          albums.push({ album: albumName, art, artists: track.artists, tracks: [track], playedAt: track.playedAt });
+        if (!albumMap.has(albumName)) {
+          albumMap.set(albumName, {
+            album: albumName,
+            art: track.coverUrl ?? null,
+            artists: track.artists,
+            tracks: [],
+            seenTrackIds: new Set(),
+            playCount: 0,
+            lastPlayedAt: track.playedAt,
+          });
         }
+        const entry = albumMap.get(albumName);
+        entry.playCount += 1;
+        // Store only unique tracks (by id) — these become the playlist tracks
+        if (track.id && !entry.seenTrackIds.has(track.id)) {
+          entry.seenTrackIds.add(track.id);
+          entry.tracks.push(track);
+        }
+        // Track the most recent play time for sorting
+        if (track.playedAt > entry.lastPlayedAt) entry.lastPlayedAt = track.playedAt;
       }
-      // populate experience selector with all track IDs from history
-      const allIds = data.map(t => t.id).filter(Boolean);
-      setSelectedTrackIds(new Set(allIds));
+
+      // Sort by most recently played
+      const albums = Array.from(albumMap.values()).sort(
+        (a, b) => new Date(b.lastPlayedAt) - new Date(a.lastPlayedAt)
+      );
+
+      // Default: all albums selected (keyed by album name)
+      setSelectedTrackIds(new Set(albums.map(a => a.album)));
       setHistory(albums);
     } catch { /* silent */ }
   };
@@ -612,13 +631,18 @@ export default function App() {
     return () => clearInterval(id);
   }, [tab, token]);
 
-  // ─── SAVE SAVIOR TAPE (experience) ─────────────────────────────────────────
+  // ─── SAVE SAVIOR TAPE ──────────────────────────────────────────────────────
   const saveTape = async () => {
-    if (!token || selectedTrackIds.size === 0) return;
+    if (!token || selectedTrackIds.size === 0 || !history) return;
     setSavingTape(true);
     setTapeResult(null);
     try {
-      const ids = Array.from(selectedTrackIds);
+      // Collect all unique track IDs from every selected album
+      const ids = history
+        .filter(entry => selectedTrackIds.has(entry.album))
+        .flatMap(entry => entry.tracks.map(t => t.id))
+        .filter(Boolean);
+
       const res = await fetch(`${API}/api/spotify/experience`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -634,20 +658,15 @@ export default function App() {
     }
   };
 
-  // Toggle a single track in the experience selector
-  const toggleTrackId = (id) => {
+  // Toggle an album in/out of the Savior Tape selection (keyed by album name)
+  const toggleAlbum = (albumName) => {
     setSelectedTrackIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(albumName)) next.delete(albumName);
+      else next.add(albumName);
       return next;
     });
   };
-
-  // All unique tracks from history (flat)
-  const historyTracks = history
-    ? history.flatMap(g => g.tracks).filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
-    : [];
 
   // Back navigation
   const goBack = () => {
@@ -701,7 +720,6 @@ export default function App() {
               {label}
             </button>
           ))}
-          {/* Dynamic tabs for detail views */}
           {artistResult && <button className="tab active">Artist</button>}
           {albumResult && <button className="tab active">Album</button>}
         </div>
@@ -734,7 +752,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Input bar — track / search / now-playing only */}
+        {/* Input bar */}
         {showInput && (
           <div className="input-area">
             <div className="input-block">
@@ -925,7 +943,6 @@ export default function App() {
               <span className="results-count">{searchResults.items.length} {searchResults.type}s</span>
             </div>
             <div className="results-grid">
-              {/* TRACK results */}
               {searchResults.type === "track" && searchResults.items.map((t, i) => {
                 const d = getTrackDisplay(t);
                 const thumb = d.art ?? t?.album?.images?.[2]?.url;
@@ -941,7 +958,6 @@ export default function App() {
                 );
               })}
 
-              {/* ARTIST results — now clickable for detail */}
               {searchResults.type === "artist" && searchResults.items.map((a, i) => {
                 const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
                 return (
@@ -959,7 +975,6 @@ export default function App() {
                 );
               })}
 
-              {/* ALBUM results — now clickable for detail */}
               {searchResults.type === "album" && searchResults.items.map((a, i) => {
                 const img = a?.images?.[1]?.url ?? a?.images?.[0]?.url;
                 const artistNames = a?.artists?.map(x => x.name).join(", ");
@@ -1042,13 +1057,13 @@ export default function App() {
           );
         })()}
 
-        {/* ── HISTORY + SAVIOR TAPE ─────────────────────────────────────────── */}
+        {/* ── HISTORY ───────────────────────────────────────────────────────── */}
         {tab === "now-playing" && !loading && history && history.length > 0 && (
           <>
             <div className="history">
               <div className="history-header">
                 <h3>Recent</h3>
-                <span>{history.length} sessions</span>
+                <span>{history.length} albums</span>
               </div>
               <div className="history-list">
                 {history.map((entry, i) => (
@@ -1066,78 +1081,87 @@ export default function App() {
                       <div className="history-album-sub">{entry.artists?.join(", ")}</div>
                     </div>
                     <div className="history-count">
-                      {entry.tracks.length} {entry.tracks.length === 1 ? "track" : "tracks"}
+                      {entry.playCount} {entry.playCount === 1 ? "play" : "plays"}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* ── SAVIOR TAPE (experience) ─── */}
-            {historyTracks.length > 0 && (
-              <div className="experience-section">
-                <div className="experience-header">
-                  <span className="experience-title">🎞 Savior Tape — curate a playlist</span>
-                  <span className="experience-count">{selectedTrackIds.size} / {historyTracks.length} selected</span>
-                </div>
-                <div className="experience-tracks">
-                  {historyTracks.map(t => {
-                    const checked = selectedTrackIds.has(t.id);
-                    return (
-                      <div key={t.id} className="exp-track-row" onClick={() => toggleTrackId(t.id)}>
-                        <div className={`exp-track-check${checked ? " checked" : ""}`} />
-                        {t.coverUrl
-                          ? <img src={t.coverUrl} alt="" className="exp-track-art" />
-                          : <div className="exp-track-art-ph">♪</div>
-                        }
-                        <div className="exp-track-info">
-                          <div className="exp-track-name">{t.title}</div>
-                          <div className="exp-track-sub">{t.artists?.join(", ")} · {t.album}</div>
-                        </div>
-                        <div className="exp-track-time">{secToTime(t.duration)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="experience-footer">
-                  <button
-                    className="exp-select-all"
-                    onClick={() => {
-                      if (selectedTrackIds.size === historyTracks.length) {
-                        setSelectedTrackIds(new Set());
-                      } else {
-                        setSelectedTrackIds(new Set(historyTracks.map(t => t.id)));
-                      }
-                    }}
-                  >
-                    {selectedTrackIds.size === historyTracks.length ? "Deselect all" : "Select all"}
-                  </button>
-                  <button
-                    className="save-tape-btn"
-                    onClick={saveTape}
-                    disabled={savingTape || selectedTrackIds.size === 0 || !token}
-                  >
-                    {savingTape ? "Saving…" : "Save to Spotify ↗"}
-                  </button>
-                </div>
-                {tapeResult && !tapeResult.error && (
-                  <div style={{ padding: "0 18px 14px" }}>
-                    <div className="tape-success">
-                      ✓ {tapeResult.message ?? tapeResult.Message}
-                      {tapeResult.playlistId ?? tapeResult.PlaylistId
-                        ? <> · <a href={`https://open.spotify.com/playlist/${tapeResult.playlistId ?? tapeResult.PlaylistId}`} target="_blank" rel="noopener noreferrer">Open playlist ↗</a></>
-                        : null
-                      }
-                    </div>
-                  </div>
-                )}
-                {tapeResult?.error && (
-                  <div style={{ padding: "0 18px 14px" }}>
-                    <div className="err">⚠ {tapeResult.error}</div>
-                  </div>
-                )}
+            {/* ── SAVIOR TAPE — album-level selection ── */}
+            <div className="experience-section">
+              <div className="experience-header">
+                <span className="experience-title">🎞 Savior Tape — curate a playlist</span>
+                <span className="experience-count">
+                  {selectedTrackIds.size} / {history.length} albums selected
+                </span>
               </div>
-            )}
+
+              <div className="experience-tracks">
+                {history.map(entry => {
+                  const checked = selectedTrackIds.has(entry.album);
+                  const totalPlays = entry.playCount;
+                  const uniqueTracks = entry.tracks.length;
+                  return (
+                    <div key={entry.album} className="exp-track-row" onClick={() => toggleAlbum(entry.album)}>
+                      <div className={`exp-track-check${checked ? " checked" : ""}`} />
+                      {entry.art
+                        ? <img src={entry.art} alt="" className="exp-track-art" />
+                        : <div className="exp-track-art-ph">💿</div>
+                      }
+                      <div className="exp-track-info">
+                        <div className="exp-track-name">{entry.album}</div>
+                        <div className="exp-track-sub">
+                          {entry.artists?.join(", ")} · {uniqueTracks} unique track{uniqueTracks !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <div className="exp-track-time">
+                        {totalPlays} {totalPlays === 1 ? "play" : "plays"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="experience-footer">
+                <button
+                  className="exp-select-all"
+                  onClick={() => {
+                    if (selectedTrackIds.size === history.length) {
+                      setSelectedTrackIds(new Set());
+                    } else {
+                      setSelectedTrackIds(new Set(history.map(e => e.album)));
+                    }
+                  }}
+                >
+                  {selectedTrackIds.size === history.length ? "Deselect all" : "Select all"}
+                </button>
+                <button
+                  className="save-tape-btn"
+                  onClick={saveTape}
+                  disabled={savingTape || selectedTrackIds.size === 0 || !token}
+                >
+                  {savingTape ? "Saving…" : "Save to Spotify ↗"}
+                </button>
+              </div>
+
+              {tapeResult && !tapeResult.error && (
+                <div style={{ padding: "0 18px 14px" }}>
+                  <div className="tape-success">
+                    ✓ {tapeResult.message ?? tapeResult.Message}
+                    {(tapeResult.playlistId ?? tapeResult.PlaylistId)
+                      ? <> · <a href={`https://open.spotify.com/playlist/${tapeResult.playlistId ?? tapeResult.PlaylistId}`} target="_blank" rel="noopener noreferrer">Open playlist ↗</a></>
+                      : null
+                    }
+                  </div>
+                </div>
+              )}
+              {tapeResult?.error && (
+                <div style={{ padding: "0 18px 14px" }}>
+                  <div className="err">⚠ {tapeResult.error}</div>
+                </div>
+              )}
+            </div>
           </>
         )}
 
