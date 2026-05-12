@@ -51,7 +51,9 @@ namespace SpotifyWebApp.Controllers
 
             var mb = isrc != null ? await _musicBrainz.GetByIsrcAsync(isrc) : null;
 
-            MusicMetadataResult techData = new MusicMetadataResult();
+            MusicMetadataResult techData = await _metadataService.GetTechnicalDetailsAsync(
+                track.Id
+            );
             if (mb != null && !string.IsNullOrEmpty(mb.RecordingId))
                 techData = await _metadataService.GetTechnicalDetailsAsync(mb.RecordingId);
 
@@ -206,11 +208,57 @@ namespace SpotifyWebApp.Controllers
                 token
             );
 
-            // 1 — створюємо плейлист через новий endpoint POST /me/playlists
+            // 1 — count existing "Savior Tape" playlists to determine next volume number
+            int nextVol = 1;
+            try
+            {
+                int offset = 0;
+                int tapeCount = 0;
+                while (true)
+                {
+                    var listRes = await httpClient.GetAsync(
+                        $"https://api.spotify.com/v1/me/playlists?limit=50&offset={offset}"
+                    );
+                    if (!listRes.IsSuccessStatusCode)
+                        break;
+
+                    var listJson = await listRes.Content.ReadAsStringAsync();
+                    using var listDoc = JsonDocument.Parse(listJson);
+                    var root = listDoc.RootElement;
+
+                    if (!root.TryGetProperty("items", out var items))
+                        break;
+
+                    foreach (var item in items.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("name", out var nameProp))
+                        {
+                            var name = nameProp.GetString() ?? "";
+                            if (name.StartsWith("Savior Tape", StringComparison.OrdinalIgnoreCase))
+                                tapeCount++;
+                        }
+                    }
+
+                    // check if there are more pages
+                    var fetched = items.GetArrayLength();
+                    if (fetched < 50)
+                        break;
+
+                    offset += 50;
+                }
+                nextVol = tapeCount + 1;
+            }
+            catch
+            {
+                // if playlist fetch fails, just default to vol. 1
+                nextVol = 1;
+            }
+
+            // 2 — create the playlist with the correct volume number
             var createPayload = JsonSerializer.Serialize(
                 new
                 {
-                    name = "Savior Tape Test",
+                    name = $"Savior Tape Vol. {nextVol}",
                     @public = false,
                     collaborative = false,
                     description = "Curated by BreakMusic",
@@ -228,7 +276,7 @@ namespace SpotifyWebApp.Controllers
             if (!createResponse.IsSuccessStatusCode)
                 return StatusCode((int)createResponse.StatusCode, createJson);
 
-            // 2 — парсимо playlist ID
+            // 3 — parse playlist ID
             string? playlistId;
             using (var doc = JsonDocument.Parse(createJson))
             {
@@ -241,7 +289,7 @@ namespace SpotifyWebApp.Controllers
             if (string.IsNullOrEmpty(playlistId))
                 return StatusCode(500, "Could not parse playlist ID from Spotify response.");
 
-            // 3 — будуємо URI список
+            // 4 — build URI list
             var uris = trackIds
                 .Where(id => !string.IsNullOrEmpty(id))
                 .Select(id => $"spotify:track:{id}")
@@ -249,11 +297,10 @@ namespace SpotifyWebApp.Controllers
 
             Console.WriteLine($"[TRACKS] Adding {uris.Count} tracks...");
 
-            // 4 — додаємо треки батчами по 100 через /items (не /tracks — deprecated)
+            // 5 — add tracks in batches of 100
             for (int i = 0; i < uris.Count; i += 100)
             {
                 var batch = uris.Skip(i).Take(100).ToList();
-
                 var addPayload = JsonSerializer.Serialize(new { uris = batch });
 
                 var addResponse = await httpClient.PostAsync(
@@ -274,7 +321,7 @@ namespace SpotifyWebApp.Controllers
                 new
                 {
                     playlistId,
-                    message = "Playlist saved successfully!",
+                    message = $"Savior Tape Vol. {nextVol} saved successfully!",
                     trackCount = uris.Count,
                     spotifyUrl = $"https://open.spotify.com/playlist/{playlistId}",
                 }

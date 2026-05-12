@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const API = "http://127.0.0.1:5098";
 
@@ -279,20 +279,80 @@ const css = `
   .album-card-img-ph { width: clamp(110px, 18vw, 240px); height: clamp(110px, 18vw, 240px); background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2rem, 5vw, 4rem); border-right: 2px solid var(--ink); }
   .album-card-meta { padding: clamp(14px, 2.2vw, 26px); flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 
-  /* HISTORY */
+  /* ── HISTORY ── */
   .history { margin-top: 28px; }
   .history-header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); margin-bottom: 14px; }
   .history-header h3 { font-family: var(--display); font-size: clamp(1rem, 2vw, 1.4rem); letter-spacing: .04em; text-transform: uppercase; }
   .history-header span { font-family: var(--mono); font-size: .58rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
   .history-list { display: flex; flex-direction: column; gap: 2px; }
-  .history-album { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; transition: all .12s; animation: fadeUp .3s ease both; }
-  .history-album:hover { border-color: var(--ink); background: var(--paper2); }
+
+  /* album row — accordion trigger */
+  .history-album-row {
+    display: flex; align-items: stretch;
+    background: var(--card-bg); border: 1px solid var(--border);
+    animation: fadeUp .3s ease both;
+    overflow: hidden;
+  }
+  .history-album-row.open { border-color: var(--ink); border-bottom: none; border-radius: 4px 4px 0 0; }
+  .history-album-row:not(.open) { border-radius: 4px; }
+
+  /* left clickable zone → album detail */
+  .history-album-left {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; flex: 1; min-width: 0;
+    cursor: pointer; transition: background .12s;
+  }
+  .history-album-left:hover { background: var(--paper2); }
+
   .history-art { width: 44px; height: 44px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); display: block; }
   .history-art-ph { width: 44px; height: 44px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid var(--border); }
   .history-info { flex: 1; min-width: 0; }
   .history-album-name { font-size: .9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .history-album-sub { font-family: var(--mono); font-size: .6rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-count { font-family: var(--mono); font-size: .6rem; color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+  .history-count { font-family: var(--mono); font-size: .6rem; color: var(--muted); white-space: nowrap; padding: 0 6px; }
+
+  /* chevron toggle button */
+  .history-chevron-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 42px; flex-shrink: 0;
+    border: none; border-left: 1px solid var(--border);
+    background: none; cursor: pointer; color: var(--muted);
+    transition: background .12s, color .12s;
+    font-size: .75rem;
+  }
+  .history-chevron-btn:hover { background: var(--paper2); color: var(--text); }
+  .history-chevron-btn.open { background: var(--ink); color: var(--accent); border-left-color: var(--ink); }
+
+  /* expanded track list under album */
+  .history-tracks {
+    border: 1px solid var(--ink); border-top: none;
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+    animation: slideDown .18s ease both;
+  }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .history-track-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .1s;
+  }
+  .history-track-row:last-child { border-bottom: none; }
+  .history-track-row:hover { background: var(--paper2); }
+
+  .ht-art { width: 32px; height: 32px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); display: block; }
+  .ht-art-ph { width: 32px; height: 32px; background: var(--paper2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .8rem; border: 1px solid var(--border); }
+  .ht-info { flex: 1; min-width: 0; }
+  .ht-name { font-size: .83rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ht-sub { font-family: var(--mono); font-size: .58rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ht-plays {
+    font-family: var(--mono); font-size: .6rem; color: var(--muted);
+    flex-shrink: 0; text-align: right; white-space: nowrap;
+    background: var(--paper2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 2px 8px;
+    min-width: 36px;
+  }
+  .ht-plays.many { background: var(--accent); color: var(--ink); border-color: var(--ink); font-weight: 700; }
 
   /* EXPERIENCE / SAVIOR TAPE */
   .experience-section { margin-top: 20px; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; animation: fadeUp .4s ease both; }
@@ -411,6 +471,76 @@ function PopBar({ value }) {
   );
 }
 
+// ── Album row with expandable track dropdown ────────────────────────────────
+function HistoryAlbumRow({ entry, onAlbumClick, onTrackClick }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", marginBottom: "2px" }}>
+      <div className={`history-album-row${open ? " open" : ""}`}>
+        {/* Left: click → album detail */}
+        <div
+          className="history-album-left"
+          onClick={() => onAlbumClick(entry)}
+          title={`Open album: ${entry.album}`}
+        >
+          {entry.art
+            ? <img src={entry.art} alt="" className="history-art" />
+            : <div className="history-art-ph">💿</div>
+          }
+          <div className="history-info">
+            <div className="history-album-name">{entry.album}</div>
+            <div className="history-album-sub">{entry.artists?.join(", ")}</div>
+          </div>
+          <div className="history-count">
+            {entry.playCount} {entry.playCount === 1 ? "play" : "plays"}
+          </div>
+        </div>
+
+        {/* Right: chevron toggle */}
+        <button
+          className={`history-chevron-btn${open ? " open" : ""}`}
+          onClick={() => setOpen(o => !o)}
+          title={open ? "Collapse tracks" : "Show tracks"}
+        >
+          {open ? "▲" : "▼"}
+        </button>
+      </div>
+
+      {/* Expanded track list */}
+      {open && (
+        <div className="history-tracks">
+          {entry.tracks.map((track, i) => (
+            <div
+              key={track.id ?? i}
+              className="history-track-row"
+              onClick={() => onTrackClick(track.id)}
+              title={`View track: ${track.title ?? track.name}`}
+            >
+              {track.coverUrl
+                ? <img src={track.coverUrl} alt="" className="ht-art" />
+                : <div className="ht-art-ph">♪</div>
+              }
+              <div className="ht-info">
+                <div className="ht-name">{track.title ?? track.name}</div>
+                <div className="ht-sub">
+                  {Array.isArray(track.artists)
+                    ? track.artists.map(a => typeof a === "string" ? a : a.name).join(", ")
+                    : "—"
+                  }
+                </div>
+              </div>
+              <div className={`ht-plays${track.playCount >= 5 ? " many" : ""}`}>
+                {track.playCount}×
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [dark, setDark] = useState(() => localStorage.getItem("bm_dark") === "1");
   const [tab, setTab] = useState("track");
@@ -425,15 +555,14 @@ export default function App() {
   const [showJson, setShowJson] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [nowPlaying, setNowPlaying] = useState(null);
+  // FIX: track progressMs and the track ID it belongs to separately
   const [progressMs, setProgressMs] = useState(0);
+  const progressTrackIdRef = useRef(null);
   const [history, setHistory] = useState(null);
 
-  // Savior Tape: selectedTrackIds now holds album names (not track IDs)
   const [selectedTrackIds, setSelectedTrackIds] = useState(new Set());
   const [savingTape, setSavingTape] = useState(false);
   const [tapeResult, setTapeResult] = useState(null);
-
-  // Navigation history stack for back button
   const [navStack, setNavStack] = useState([]);
 
   useEffect(() => {
@@ -452,8 +581,15 @@ export default function App() {
     }
   }, []);
 
+  // FIX: progress ticker — only increments when playing, resets when track changes
   useEffect(() => {
     if (!nowPlaying?.isPlaying) return;
+    const currentId = nowPlaying?.id ?? nowPlaying?.Id;
+    // Reset progress counter if we switched to a new track
+    if (progressTrackIdRef.current !== currentId) {
+      progressTrackIdRef.current = currentId;
+      setProgressMs(nowPlaying.progressMs ?? 0);
+    }
     const id = setInterval(() => setProgressMs(p => p + 1000), 1000);
     return () => clearInterval(id);
   }, [nowPlaying]);
@@ -521,6 +657,43 @@ export default function App() {
     finally { setLoading(false); }
   };
 
+  // ─── FETCH ALBUM BY NAME (for history row click) ───────────────────────────
+  // We don't have the album Spotify ID in the history entry, so we search for it
+  const fetchAlbumByEntry = async (entry) => {
+    if (!entry) return;
+    // Use the first track's album ID if we can derive it, otherwise search
+    const firstTrack = entry.tracks[0];
+    if (!firstTrack?.id) return;
+    // We need to go via the track to get the album ID
+    reset();
+    try {
+      const res = await fetch(`${API}/api/spotify/track/${encodeURIComponent(firstTrack.id)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const trackData = await res.json();
+      // trackData doesn't carry albumId directly in our DTO, so search for the album by name
+      const searchRes = await fetch(`${API}/api/spotify/search?query=${encodeURIComponent(entry.album)}&type=album`);
+      if (!searchRes.ok) throw new Error(`HTTP ${searchRes.status}`);
+      const searchData = await searchRes.json();
+      const items = searchData?.albums?.items ?? [];
+      // Find closest match by name + artist
+      const artists = entry.artists ?? [];
+      const match = items.find(a =>
+        a.name?.toLowerCase() === entry.album.toLowerCase() &&
+        a.artists?.some(ar => artists.some(ea => ea.toLowerCase() === ar.name?.toLowerCase()))
+      ) ?? items[0];
+      if (match?.id) {
+        const albumRes = await fetch(`${API}/api/spotify/album/${encodeURIComponent(match.id)}`);
+        if (!albumRes.ok) throw new Error(`HTTP ${albumRes.status}`);
+        const albumData = await albumRes.json();
+        setAlbumResult(albumData);
+        setTab("album");
+      } else {
+        throw new Error("Album not found");
+      }
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
   // ─── FETCH SEARCH ──────────────────────────────────────────────────────────
   const fetchSearch = async () => {
     if (!query.trim()) return;
@@ -546,8 +719,10 @@ export default function App() {
       if (res.status === 204) { setLoading(false); return; }
       if (!res.ok) throw new Error(`HTTP ${res.status} — ${(await res.text().catch(() => "")).slice(0, 120)}`);
       const data = await res.json();
-      setNowPlaying(data);
+      // FIX: always reset progress when manually refreshing
+      progressTrackIdRef.current = data?.id ?? data?.Id ?? null;
       setProgressMs(data.progressMs ?? 0);
+      setNowPlaying(data);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -560,8 +735,7 @@ export default function App() {
       if (!res.ok) return;
       const data = await res.json();
 
-      // Deduplicate by album name globally — merge all plays of the same album
-      // regardless of order in the history list
+      // Group by album, track per-track play counts too
       const albumMap = new Map();
       for (const track of data) {
         const albumName = track.album ?? "Unknown Album";
@@ -570,29 +744,35 @@ export default function App() {
             album: albumName,
             art: track.coverUrl ?? null,
             artists: track.artists,
-            tracks: [],
-            seenTrackIds: new Set(),
+            tracks: [],          // unique tracks, with playCount attached
+            trackPlayMap: new Map(), // trackId → playCount
             playCount: 0,
             lastPlayedAt: track.playedAt,
           });
         }
         const entry = albumMap.get(albumName);
         entry.playCount += 1;
-        // Store only unique tracks (by id) — these become the playlist tracks
-        if (track.id && !entry.seenTrackIds.has(track.id)) {
-          entry.seenTrackIds.add(track.id);
-          entry.tracks.push(track);
-        }
-        // Track the most recent play time for sorting
         if (track.playedAt > entry.lastPlayedAt) entry.lastPlayedAt = track.playedAt;
+
+        if (track.id) {
+          const prev = entry.trackPlayMap.get(track.id) ?? 0;
+          entry.trackPlayMap.set(track.id, prev + 1);
+          // add to tracks array if first time seeing
+          if (prev === 0) {
+            entry.tracks.push({ ...track, playCount: 0 }); // playCount filled below
+          }
+        }
       }
 
-      // Sort by most recently played
-      const albums = Array.from(albumMap.values()).sort(
-        (a, b) => new Date(b.lastPlayedAt) - new Date(a.lastPlayedAt)
-      );
+      // Attach per-track play counts and sort tracks by most played
+      const albums = Array.from(albumMap.values()).map(entry => {
+        const tracks = entry.tracks.map(t => ({
+          ...t,
+          playCount: entry.trackPlayMap.get(t.id) ?? 1,
+        })).sort((a, b) => b.playCount - a.playCount);
+        return { ...entry, tracks };
+      }).sort((a, b) => new Date(b.lastPlayedAt) - new Date(a.lastPlayedAt));
 
-      // Default: all albums selected (keyed by album name)
       setSelectedTrackIds(new Set(albums.map(a => a.album)));
       setHistory(albums);
     } catch { /* silent */ }
@@ -612,7 +792,11 @@ export default function App() {
       setNowPlaying(prev => {
         const prevId = prev?.id ?? prev?.Id;
         const newId = data?.id ?? data?.Id;
-        if (newId && newId !== prevId) setProgressMs(data.progressMs ?? 0);
+        // FIX: reset progress ref & state when track changes
+        if (newId && newId !== prevId) {
+          progressTrackIdRef.current = newId;
+          setProgressMs(data.progressMs ?? 0);
+        }
         return data;
       });
     } catch { /* silent */ }
@@ -637,7 +821,6 @@ export default function App() {
     setSavingTape(true);
     setTapeResult(null);
     try {
-      // Collect all unique track IDs from every selected album
       const ids = history
         .filter(entry => selectedTrackIds.has(entry.album))
         .flatMap(entry => entry.tracks.map(t => t.id))
@@ -658,7 +841,6 @@ export default function App() {
     }
   };
 
-  // Toggle an album in/out of the Savior Tape selection (keyed by album name)
   const toggleAlbum = (albumName) => {
     setSelectedTrackIds(prev => {
       const next = new Set(prev);
@@ -668,7 +850,6 @@ export default function App() {
     });
   };
 
-  // Back navigation
   const goBack = () => {
     const stack = [...navStack];
     const prev = stack.pop();
@@ -683,7 +864,6 @@ export default function App() {
     }
   };
 
-  // ─── MAIN HANDLER ──────────────────────────────────────────────────────────
   const handleGo = () => {
     if (tab === "track") fetchTrack();
     else if (tab === "search") fetchSearch();
@@ -738,7 +918,6 @@ export default function App() {
       </nav>
 
       <main>
-        {/* Hero — only when nothing is showing */}
         {!hasResult && !loading && !error && showInput && (
           <div className="hero">
             <div className="hero-eyebrow">Spotify API Explorer</div>
@@ -752,7 +931,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Input bar */}
         {showInput && (
           <div className="input-area">
             <div className="input-block">
@@ -1067,28 +1245,17 @@ export default function App() {
               </div>
               <div className="history-list">
                 {history.map((entry, i) => (
-                  <div
+                  <HistoryAlbumRow
                     key={i}
-                    className="history-album"
-                    onClick={() => entry.tracks[0]?.id && fetchTrack(entry.tracks[0].id, false)}
-                  >
-                    {entry.art
-                      ? <img src={entry.art} alt="" className="history-art" />
-                      : <div className="history-art-ph">💿</div>
-                    }
-                    <div className="history-info">
-                      <div className="history-album-name">{entry.album}</div>
-                      <div className="history-album-sub">{entry.artists?.join(", ")}</div>
-                    </div>
-                    <div className="history-count">
-                      {entry.playCount} {entry.playCount === 1 ? "play" : "plays"}
-                    </div>
-                  </div>
+                    entry={entry}
+                    onAlbumClick={fetchAlbumByEntry}
+                    onTrackClick={(id) => fetchTrack(id, false)}
+                  />
                 ))}
               </div>
             </div>
 
-            {/* ── SAVIOR TAPE — album-level selection ── */}
+            {/* ── SAVIOR TAPE ── */}
             <div className="experience-section">
               <div className="experience-header">
                 <span className="experience-title">🎞 Savior Tape — curate a playlist</span>

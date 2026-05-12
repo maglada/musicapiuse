@@ -18,6 +18,7 @@ namespace SpotifyWebApp.Services
             }
         }
 
+        // recordingId is now the Spotify track ID (passed from SpotifyController)
         public async Task<MusicMetadataResult> GetTechnicalDetailsAsync(string recordingId)
         {
             var result = new MusicMetadataResult();
@@ -25,7 +26,7 @@ namespace SpotifyWebApp.Services
             if (string.IsNullOrEmpty(recordingId))
                 return result;
 
-            var url = $"https://acousticbrainz.org/api/v1/{recordingId}/low-level";
+            var url = $"https://api.reccobeats.com/v1/track/{recordingId}/audio-feature";
 
             try
             {
@@ -37,23 +38,20 @@ namespace SpotifyWebApp.Services
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                if (
-                    root.TryGetProperty("rhythm", out var rhythm)
-                    && rhythm.TryGetProperty("bpm", out var bpm)
-                )
-                {
-                    result.Bpm = Math.Round(bpm.GetDouble(), 1);
-                }
+                if (root.TryGetProperty("tempo", out var tempo))
+                    result.Bpm = Math.Round(tempo.GetDouble(), 1);
 
-                if (root.TryGetProperty("tonal", out var tonal))
-                {
-                    if (tonal.TryGetProperty("key_key", out var k))
-                        result.Key = k.GetString() ?? "Unknown";
-                    if (tonal.TryGetProperty("key_scale", out var s))
-                        result.Scale = s.GetString() ?? "Unknown";
-                }
+                // ReccoBeats does not provide key/scale — stays "Unknown"
 
-                result.Mood = result.Scale == "minor" ? "Somber" : "Bright";
+                // Derive mood from valence (0–1 scale)
+                if (root.TryGetProperty("valence", out var valence))
+                {
+                    var v = valence.GetDouble();
+                    result.Mood =
+                        v >= 0.6 ? "Happy"
+                        : v >= 0.4 ? "Neutral"
+                        : "Melancholic";
+                }
             }
             catch { }
 
